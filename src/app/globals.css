@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
@@ -8,7 +9,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-work-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,5 +23,900 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-work-sans), 'Work Sans', Arial, Helvetica, sans-serif;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Performance optimizations for resizable panels */
+.resizable-panel {
+  will-change: width;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout style paint;
+  min-width: 0; /* Prevent flex items from growing beyond their content */
+}
+
+/* Smooth dragging optimization */
+.resizable-container {
+  contain: layout style paint;
+  will-change: width;
+}
+
+.resizable-divider {
+  will-change: transform;
+  touch-action: none; /* Prevent touch events from interfering */
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none;
+  color: #f3f4f6;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ProseMirror p {
+  margin-bottom: 1rem;
+}
+
+.ProseMirror h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f9fafb;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #f9fafb;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #f9fafb;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid rgba(255, 255, 255, 0.1);
+  padding-left: 1rem;
+  font-style: italic;
+  color: #d1d5db;
+  margin: 1rem 0;
+}
+
+.ProseMirror code {
+  background-color: #4b5563;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.ProseMirror pre {
+  background-color: #4b5563;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.ProseMirror pre code {
+  background: none;
+  padding: 0;
+}
+
+.ProseMirror strong {
+  font-weight: bold;
+  color: #f9fafb;
+}
+
+.ProseMirror em {
+  font-style: italic;
+  color: #e5e7eb;
+}
+
+/* Placeholder styles */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #6b7280;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Focus styles */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Selection styles */
+.ProseMirror ::selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Ensure text selection works properly in chat messages */
+.chat-message-content,
+.chat-message-content *,
+.chat-message-content .prose,
+.chat-message-content .prose * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  contain: none !important; /* Remove contain to prevent selection issues */
+}
+
+/* Prevent text selection during resize */
+.resizable-container.resizing {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* But allow text selection in messages even during resize */
+.resizable-container.resizing .chat-message-content,
+.resizable-container.resizing .chat-message-content *,
+.resizable-container.resizing .chat-message-content .prose,
+.resizable-container.resizing .chat-message-content .prose * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Prevent scrolling during resize operations */
+.resizable-container.resizing .messages-container {
+  overflow: hidden !important;
+  scroll-behavior: auto !important;
+}
+
+/* Smooth transitions for non-resize interactions */
+.chat-panel * {
+  /* Remove user-select: none - this was causing the selection issue */
+}
+
+/* Re-enable transitions when not resizing */
+.chat-panel:not(.resizing) * {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Optimize prose content rendering */
+.prose {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+.prose * {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Prevent image and media layout shifts */
+.prose img,
+.prose video,
+.prose iframe {
+  max-width: 100%;
+  height: auto;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Optimize details/summary elements */
+details {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+summary {
+  cursor: pointer;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Prevent layout shifts in thinking sections */
+.thinking-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Single-column chat layout optimizations */
+.chat-message {
+  margin-bottom: 1.5rem;
+}
+
+.chat-message p {
+  margin-bottom: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.chat-message ul, .chat-message ol {
+  margin-bottom: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.chat-message li {
+  margin-bottom: 0.25rem;
+}
+
+.chat-message li ul, .chat-message li ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Ordered list styling */
+.chat-message ol li::marker {
+  color: #6b7280;
+  font-family: inherit;
+  vertical-align: baseline;
+  line-height: inherit;
+  font-weight: 500;
+}
+
+.chat-message ol li p {
+  margin: 0;
+}
+
+/* Thinking process styling */
+.thinking-process {
+  margin-bottom: 1rem;
+}
+
+.thinking-process-details {
+  margin-bottom: 1rem;
+}
+
+.thinking-process-details ul, .thinking-process-details ol {
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.thinking-process-details li {
+  margin-bottom: 0.25rem;
+}
+
+/* Horizontal rule styling */
+.chat-message hr {
+  margin: 1.25rem 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  opacity: 0.6;
+}
+
+.chat-message-header {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+.chat-avatar {
+  flex-shrink: 0;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+.chat-message-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Message border animations */
+.chat-message-content {
+  transition: border-color 0.2s ease-in-out;
+}
+
+.chat-message-content:hover {
+  border-left-color: rgba(59, 130, 246, 0.8);
+}
+
+/* Optimize prose content in chat messages */
+.chat-message-content .prose {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+.chat-message-content .prose * {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Prevent layout shifts in thinking sections */
+.chat-message-content details {
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+.chat-message-content summary {
+  cursor: pointer;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+.chat-message-content .thinking-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Narrative Editor Styles */
+.narrative-editor {
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  width: 100%;
+}
+
+.narrative-editor .ProseMirror {
+  outline: none;
+  color: #f3f4f6;
+  font-size: 18px;
+  line-height: 27px;
+  padding: 24px 1.5rem 480px 1.5rem; /* 24px top padding to position text under gradient mask */
+  padding-right: 8px; /* Account for scrollbar width */
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100%;
+  box-sizing: border-box;
+  max-height: none !important;
+  height: auto !important;
+  position: relative;
+}
+
+/* Draft mode specific styles */
+
+.narrative-editor .ProseMirror p {
+  margin-bottom: 1.25rem;
+  color: #f3f4f6;
+  font-size: 18px;
+  line-height: 1.7;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+}
+
+.narrative-editor .ProseMirror h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f9fafb;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.narrative-editor .ProseMirror h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #f9fafb;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.narrative-editor .ProseMirror blockquote {
+  border-left: 4px solid rgba(255, 255, 255, 0.1);
+  padding-left: 1rem;
+  font-style: italic;
+  color: #d1d5db;
+  margin: 1rem 0;
+}
+
+.narrative-editor .ProseMirror ul,
+.narrative-editor .ProseMirror ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.narrative-editor .ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.narrative-editor .ProseMirror strong {
+  font-weight: bold;
+  color: #f9fafb;
+}
+
+.narrative-editor .ProseMirror em {
+  font-style: italic;
+  color: #e5e7eb;
+}
+
+.narrative-editor .ProseMirror code {
+  background-color: #4b5563;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.narrative-editor .ProseMirror pre {
+  background-color: #4b5563;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.narrative-editor .ProseMirror pre code {
+  background: none;
+  padding: 0;
+}
+
+.narrative-editor .ProseMirror:focus {
+  outline: none;
+}
+
+.narrative-editor .ProseMirror .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #6b7280;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Immersive narrative typography */
+.narrative-editor {
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  max-width: 42em;
+  margin: 0 auto;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.narrative-editor::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+.narrative-editor .ProseMirror {
+  font-size: 18px;
+  line-height: 27px;
+  color: #e5e7eb;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  outline: none;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.narrative-editor .ProseMirror p {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+.narrative-editor .ProseMirror h1,
+.narrative-editor .ProseMirror h2,
+.narrative-editor .ProseMirror h3,
+.narrative-editor .ProseMirror h4,
+.narrative-editor .ProseMirror h5,
+.narrative-editor .ProseMirror h6 {
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #f3f4f6;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+.narrative-editor .ProseMirror h1 {
+  font-size: 2rem;
+  border-bottom: 2px solid #4b5563;
+  padding-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.narrative-editor .ProseMirror h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #4b5563;
+  padding-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.narrative-editor .ProseMirror blockquote {
+  border-left: 4px solid #6b7280;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #d1d5db;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+.narrative-editor .ProseMirror ul,
+.narrative-editor .ProseMirror ol {
+  margin: 1.5rem 0;
+  padding-left: 2rem;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+.narrative-editor .ProseMirror li {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+.narrative-editor .ProseMirror strong {
+  color: #f9fafb;
+  font-weight: 600;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+.narrative-editor .ProseMirror em {
+  color: #d1d5db;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+.narrative-editor .ProseMirror code {
+  background-color: #374151;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+}
+
+.narrative-editor .ProseMirror pre {
+  background-color: #1f2937;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.narrative-editor .ProseMirror pre code {
+  background: none;
+  padding: 0;
+  color: #e5e7eb;
+}
+
+/* Immersive header styling */
+.immersive-header {
+  background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Focus states for better immersion */
+.narrative-editor .ProseMirror:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.narrative-editor .ProseMirror .is-editor-empty:first-child::before {
+  color: #6b7280;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  font-style: italic;
+  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+}
+
+/* Enhanced typography for better readability with Eczar */
+.narrative-editor .ProseMirror {
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.narrative-editor .ProseMirror p {
+  text-align: left;
+  hyphens: none;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+/* Special styling for the first paragraph to create a drop cap effect */
+/* .narrative-editor .ProseMirror p:first-of-type {
+  text-indent: 0;
+}
+
+.narrative-editor .ProseMirror p:not(:first-of-type) {
+  text-indent: 1.5em;
+} */
+
+.chat-message-content .prose p,
+.chat-message-content .prose ul,
+.chat-message-content .prose ol {
+  margin-bottom: 0.5rem !important;
+  margin-top: 0.5rem !important;
+}
+
+.chat-message-content .prose > :first-child {
+  margin-top: 0 !important;
+}
+
+.chat-message-content .prose > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* More aggressive spacing reduction for chat messages */
+.chat-message-content .prose h1,
+.chat-message-content .prose h2,
+.chat-message-content .prose h3,
+.chat-message-content .prose h4,
+.chat-message-content .prose h5,
+.chat-message-content .prose h6 {
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.chat-message-content .prose blockquote {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.chat-message-content .prose pre {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.chat-message-content .prose code {
+  margin: 0 !important;
+  padding: 0.125rem 0.25rem !important;
+}
+
+.chat-message-content .prose strong,
+.chat-message-content .prose em {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.chat-message-content .prose a {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Reduce spacing for list items */
+.chat-message-content .prose li {
+  margin-top: 0.125rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Style horizontal rules for better section separation */
+.chat-message-content .prose hr {
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  border: none !important;
+  border-top: 1px solid #4b5563 !important;
+  opacity: 0.6 !important;
+}
+
+.chat-message-content .prose li > p {
+  margin: 0 !important;
+}
+
+/* Reduce spacing for nested lists */
+.chat-message-content .prose ul ul,
+.chat-message-content .prose ol ol,
+.chat-message-content .prose ul ol,
+.chat-message-content .prose ol ul {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.chat-message-content .prose ol > li::marker {
+  color: #e5e7eb !important;   /* Use the same color as text (Tailwind gray-200) */
+  font-size: 1em !important;   /* Match the list item font size */
+  font-family: inherit !important;
+  vertical-align: baseline !important;  /* Align with text baseline */
+  line-height: inherit !important;     /* Use the same line-height as the list item */
+  font-weight: 600 !important;
+}
+
+/* Remove paragraph margins inside ordered list items to fix alignment */
+.chat-message-content .prose ol > li p {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Additional rules to handle marked library output and ensure tight spacing */
+.chat-message-content .prose {
+  line-height: 1.5 !important;
+}
+
+.chat-message-content .prose p {
+  line-height: 1.5 !important;
+}
+
+/* Handle potential extra whitespace from marked library */
+.chat-message-content .prose br {
+  display: none !important;
+}
+
+.chat-message-content .prose p br {
+  display: inline !important;
+}
+
+/* Ensure no extra spacing from divs */
+.chat-message-content .prose div {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Handle any potential spacing from spans */
+.chat-message-content .prose span {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure consistent spacing for all text elements */
+.chat-message-content .prose * {
+  line-height: 1.5 !important;
+}
+
+/* Override any potential spacing from Tailwind Typography defaults */
+.chat-message-content .prose {
+  max-width: none !important;
+  color: inherit !important;
+}
+
+.chat-message-content .prose p:empty {
+  display: none !important;
+}
+
+.chat-message-content .prose p:only-child {
+  margin: 0 !important;
+}
+
+/* Ultra-aggressive spacing control for chat messages */
+.chat-message-content .prose {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.chat-message-content .prose > * {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.chat-message-content .prose > *:first-child {
+  margin-top: 0 !important;
+}
+
+.chat-message-content .prose > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Handle any potential whitespace from marked library */
+.chat-message-content .prose {
+  white-space: normal !important;
+}
+
+.chat-message-content .prose p {
+  white-space: normal !important;
+}
+
+/* Floating add to narrative button */
+.add-to-narrative-button {
+  pointer-events: none;
+  animation: fadeInScale 0.2s ease-out;
+  position: absolute;
+  z-index: 1000;
+}
+
+.add-to-narrative-button button {
+  pointer-events: auto;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* Chat header custom padding */
+.chat-header {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+/* Prevent layout shifts when scrollbars appear/disappear */
+.narrative-editor {
+  overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #6b7280 #374151; /* Firefox */
+}
+
+/* Ensure consistent spacing for narrative editor content */
+.narrative-editor .ProseMirror {
+  padding-right: 8px; /* Account for scrollbar width */
+  box-sizing: border-box;
+}
+
+/* Prevent layout shifts in chat messages container */
+.messages-container {
+  min-height: 0;
+  flex: 1;
+  overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
+  overflow-x: hidden;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #6b7280 #374151; /* Firefox */
+  padding-right: 8px; /* Account for scrollbar width */
+  box-sizing: border-box;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  contain: none; /* Remove contain to prevent selection issues */
+}
+
+/* Prevent layout shifts in any scrollable container */
+.overflow-y-auto {
+  overflow-y: scroll !important;
+  scrollbar-width: thin;
+  scrollbar-color: #6b7280 #374151;
+}
+
+/* Ensure consistent spacing for all scrollable content */
+.overflow-y-auto,
+.overflow-y-scroll {
+  padding-right: 8px;
+  box-sizing: border-box;
+}
+
+.narrative-title:empty:before {
+  content: attr(data-placeholder);
+  color: #6b7280;
+  pointer-events: none;
+  opacity: 0.7;
+  font-style: italic;
+  display: block;
 }
