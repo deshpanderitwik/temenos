@@ -78,7 +78,7 @@ export async function GET() {
             messageCount: conversation.messages.length
           };
         } catch (error) {
-          console.error(`Error reading conversation file ${filename}:`, error);
+          console.error(`Error reading conversation file ${filename}`);
           return null;
         }
       })
@@ -90,7 +90,7 @@ export async function GET() {
 
     return NextResponse.json({ conversations: validConversations });
   } catch (error) {
-    console.error('Error listing conversations:', error);
+    console.error('Error listing conversations');
     return NextResponse.json({ error: 'Failed to list conversations' }, { status: 500 });
   }
 }
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
       title: conversation.title 
     });
   } catch (error) {
-    console.error('Error saving conversation:', error);
+    console.error('Error saving conversation');
     return NextResponse.json({ error: 'Failed to save conversation' }, { status: 500 });
   }
 }

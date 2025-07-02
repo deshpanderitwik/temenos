@@ -66,7 +66,7 @@ export async function GET() {
             characterCount: systemPrompt.characterCount
           };
         } catch (error) {
-          console.error(`Error reading system prompt file ${filename}:`, error);
+          console.error(`Error reading system prompt file ${filename}`);
           return null;
         }
       })
@@ -78,7 +78,7 @@ export async function GET() {
 
     return NextResponse.json({ systemPrompts: validSystemPrompts });
   } catch (error) {
-    console.error('Error listing system prompts:', error);
+    console.error('Error listing system prompts');
     return NextResponse.json({ error: 'Failed to list system prompts' }, { status: 500 });
   }
 }
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       characterCount: systemPrompt.characterCount
     });
   } catch (error) {
-    console.error('Error saving system prompt:', error);
+    console.error('Error saving system prompt');
     return NextResponse.json({ error: 'Failed to save system prompt' }, { status: 500 });
   }
 } 

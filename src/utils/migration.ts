@@ -94,7 +94,6 @@ export async function decryptLegacy(encryptedText: string, password: string): Pr
     const decoder = new TextDecoder();
     return decoder.decode(decrypted);
   } catch (error) {
-    console.error('Legacy decryption failed:', error);
     throw new Error('Failed to decrypt legacy data');
   }
 }
@@ -155,7 +154,6 @@ export async function migrateEncryptedData(
     
     return newEncryptedData;
   } catch (error) {
-    console.error('Migration failed:', error);
     throw new Error('Failed to migrate encrypted data');
   }
 }
@@ -229,7 +227,6 @@ export async function testMigration(testKey: string): Promise<boolean> {
     
     return testMessage === decrypted;
   } catch (error) {
-    console.error('Migration test failed:', error);
     return false;
   }
 } 

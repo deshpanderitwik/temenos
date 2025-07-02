@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Work_Sans, Geist_Mono } from "next/font/google";
+import { Work_Sans, Geist_Mono, DM_Sans } from "next/font/google";
 import { Eczar } from "next/font/google";
 import "./globals.css";
 
@@ -10,6 +10,11 @@ const workSans = Work_Sans({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
 });
 
@@ -31,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${workSans.variable} ${geistMono.variable} ${eczar.variable} antialiased`}
+        className={`${workSans.variable} ${geistMono.variable} ${dmSans.variable} ${eczar.variable} antialiased`}
       >
         {children}
       </body>

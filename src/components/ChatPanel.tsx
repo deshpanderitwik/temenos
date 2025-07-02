@@ -101,16 +101,24 @@ interface ChatPanelProps {
   systemPrompt: string;
   onSystemPromptChange: (prompt: string) => void;
   onOpenSystemPromptModal: () => void;
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
 }
 
 const DEFAULT_SYSTEM_PROMPT = `You are a helpful AI assistant. You can help with various tasks and conversations.
 
 Please respond in a helpful, informative, and engaging manner.`;
 
-export default function ChatPanel({ currentConversation, onConversationUpdate, onAddToNarrative, systemPrompt, onSystemPromptChange, onOpenSystemPromptModal }: ChatPanelProps) {
+export default function ChatPanel({ currentConversation, onConversationUpdate, onAddToNarrative, systemPrompt, onSystemPromptChange, onOpenSystemPromptModal, selectedModel = 'r1-1776', onModelChange }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Available models
+  const availableModels = [
+    { id: 'r1-1776', name: 'R1-1776', description: 'Fast and efficient' },
+    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' }
+  ];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -426,7 +434,8 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
         body: JSON.stringify({
           prompt: encryptedPrompt,
           systemPrompt: encryptedSystemPrompt,
-          messages: encryptedMessages
+          messages: encryptedMessages,
+          model: selectedModel
         }),
       });
 
@@ -486,7 +495,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        content: 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -583,7 +592,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   <summary className="cursor-pointer inline-flex items-center gap-2 px-3 py-1 bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/60 font-medium text-sm rounded-full transition-colors">
                     <span>Thinking Process</span>
                   </summary>
-                  <div className="mt-2 px-6 pt-1 pb-3 bg-white/10 rounded text-sm">
+                  <div className="mt-2 px-6 pt-1 pb-1 bg-white/10 rounded-lg text-sm">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={thinkingMarkdownComponents}
@@ -611,7 +620,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0A0A0A]">
+            <div className="h-full flex flex-col bg-[#141414]">
       {/* Messages - Takes remaining space and scrolls */}
       <div className="flex-1 overflow-hidden min-h-0 relative">
         <div 
@@ -625,7 +634,30 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
               const selection = window.getSelection();
               if (!selection || selection.rangeCount === 0) return;
               
-              const selectedText = selection.toString().trim();
+              // Get the selected text with preserved paragraph breaks
+              let selectedText = '';
+              
+              if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const fragment = range.cloneContents();
+                
+                // Convert the fragment to HTML and then process it
+                const tempDiv = document.createElement('div');
+                tempDiv.appendChild(fragment);
+                
+                // Get the HTML content
+                const htmlContent = tempDiv.innerHTML;
+                
+                // Convert HTML to text while preserving paragraph breaks
+                selectedText = htmlContent
+                  .replace(/<br\s*\/?>/gi, '\n') // Convert <br> tags to newlines
+                  .replace(/<\/p>/gi, '\n') // Convert closing </p> tags to newlines
+                  .replace(/<p[^>]*>/gi, '') // Remove opening <p> tags
+                  .replace(/<[^>]*>/g, '') // Remove any other HTML tags
+                  .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
+                  .trim();
+              }
+              
               if (selectedText.length > 0 && onAddToNarrative) {
                 onAddToNarrative(selectedText);
                 // Don't clear selection - let user keep their selection
@@ -687,13 +719,25 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
             </div>
           </div>
           <div className="flex justify-between items-center flex-shrink-0">
-            <button
-              type="button"
-              className="px-3 py-1 text-xs bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors"
-              title="Model: r1-1776"
-            >
-              r1-1776
-            </button>
+            <div className="relative">
+              <select
+                value={selectedModel}
+                onChange={(e) => onModelChange?.(e.target.value)}
+                className="px-3 py-1 text-xs bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
+                style={{
+                  backgroundImage: 'none',
+                  paddingRight: '12px',
+                  textAlign: 'center'
+                }}
+                disabled={isLoading}
+              >
+                {availableModels.map((model) => (
+                  <option key={model.id} value={model.id} className="bg-gray-800 text-white text-center">
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"

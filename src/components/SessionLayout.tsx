@@ -37,6 +37,7 @@ export default function SessionLayout() {
   const startWidthRef = useRef<number>(25);
   const [isSystemPromptModalOpen, setIsSystemPromptModalOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState<string>('You are a wise, compassionate therapeutic assistant trained in Jungian depth psychology...');
+  const [selectedModel, setSelectedModel] = useState('r1-1776');
   
   // Save feedback state
   const [showSaveFeedback, setShowSaveFeedback] = useState(false);
@@ -57,22 +58,25 @@ export default function SessionLayout() {
 
   // Keyboard shortcut handler for cmd + j to toggle draft/main mode
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       // Cmd+J (Mac) or Ctrl+J (Windows/Linux) to toggle draft/main mode
       if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
         e.preventDefault();
-        setIsDraftMode((prev) => !prev);
+        
+        console.log('Cmd+J pressed - current isDraftMode:', isDraftMode);
+        
+        // Use the simplified mode switch function
+        if (narrativePanelRef.current) {
+          await narrativePanelRef.current.handleModeSwitch();
+        }
       }
     };
 
-    // Add global keyboard event listener
     document.addEventListener('keydown', handleKeyDown);
-
-    // Cleanup on unmount
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isDraftMode]);
 
   // Helper function to load the latest conversation
   const loadLatestConversation = async () => {
@@ -136,7 +140,7 @@ export default function SessionLayout() {
     const containerRect = container.getBoundingClientRect();
     // Invert the calculation: mouse position from right edge determines chat width
     const mousePositionFromRight = containerRect.right - e.clientX;
-    let newWidth = (mousePositionFromRight / containerRect.width) * 100;
+    const newWidth = (mousePositionFromRight / containerRect.width) * 100;
     
     // Constrain width between 20% and 80%
     let constrainedWidth = Math.max(20, Math.min(80, newWidth));
@@ -420,13 +424,18 @@ export default function SessionLayout() {
         </div>
       )}
       
-      <div className="h-screen bg-[#0A0A0A] flex">
+      <div className="h-screen bg-[#141414] flex">
         {/* Draft/Main Toggle Switch - fixed at top left, 48px from edge */}
         <div className="fixed top-0 left-0 pt-7 z-[100]" style={{ paddingLeft: '24px' }}>
           <div className="w-16 flex items-center justify-center">
             <button
               className={`w-10 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${isDraftMode ? 'bg-yellow-600' : 'bg-white/10'}`}
-              onClick={() => setIsDraftMode((v) => !v)}
+              onClick={async () => {
+                // Use the simplified mode switch function
+                if (narrativePanelRef.current) {
+                  await narrativePanelRef.current.handleModeSwitch();
+                }
+              }}
               title={isDraftMode ? 'Switch to Main Narrative (⌘+J)' : 'Switch to Draft (⌘+J)'}
             >
               <span
@@ -489,7 +498,7 @@ export default function SessionLayout() {
         >
           {/* Narrative Panel */}
           <div 
-            className="bg-[#0A0A0A] resizable-panel"
+            className="bg-[#141414] resizable-panel"
             style={{ width: `${narrativeWidth}%` }}
           >
             <NarrativePanel 
@@ -509,7 +518,7 @@ export default function SessionLayout() {
 
           {/* Chat Panel with floating appearance and left-edge resize handle */}
           <div 
-            className="resizable-panel chat-panel rounded-2xl shadow-2xl bg-[#18181b]/95 border border-white/10 backdrop-blur-lg my-8 mr-4 flex flex-col relative"
+            className="resizable-panel chat-panel rounded-2xl shadow-2xl bg-[#141414]/95 border border-white/10 backdrop-blur-lg my-8 mr-4 flex flex-col relative"
             style={{ width: `${chatWidth}%`, minWidth: '320px', maxWidth: '600px' }}
           >
             {/* Left-edge resize handle */}
@@ -526,6 +535,8 @@ export default function SessionLayout() {
               systemPrompt={systemPrompt}
               onSystemPromptChange={setSystemPrompt}
               onOpenSystemPromptModal={() => setIsSystemPromptModalOpen(true)}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
             />
           </div>
         </div>

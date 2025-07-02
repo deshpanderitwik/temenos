@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { encrypt, decrypt } from '@/utils/encryption';
 
 // Types for our request body
 interface HealingRequest {
   prompt: string;
   systemPrompt?: string;
   messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
+  model?: string;
 }
 
 export async function POST(request: Request) {
@@ -30,8 +30,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('API keys found, parsing request body');
-
     // Parse the request body
     const body: HealingRequest = await request.json();
     
@@ -41,8 +39,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    console.log('Request body parsed, starting decryption');
 
     try {
       // Decrypt the incoming prompt and messages using client-side decryption
@@ -75,10 +71,6 @@ export async function POST(request: Request) {
       // Take the last 10 messages to keep the context manageable
       const recentMessages = decryptedMessages.slice(-10);
       
-      // Log the roles from conversation history for debugging
-      const historyRoles = recentMessages.map(msg => msg.role);
-      console.log('Roles from conversation history:', historyRoles);
-      
       // Filter out system messages and build alternating conversation
       const conversationMessages = recentMessages.filter(msg => msg.role !== 'system');
       
@@ -92,8 +84,6 @@ export async function POST(request: Request) {
           messages.push(msg);
           // Switch to the opposite role for next message
           currentRole = currentRole === 'user' ? 'assistant' : 'user';
-        } else {
-          console.log(`Skipping ${msg.role} message - expected ${currentRole} for alternation`);
         }
       }
 
@@ -106,14 +96,12 @@ export async function POST(request: Request) {
         // 2. Skip the last user message and add this one
         // Let's append to maintain conversation flow
         messages[messages.length - 1].content += '\n\n' + decryptedPrompt;
-        console.log('Appended new prompt to existing user message');
       } else {
         // Add as new user message
         messages.push({
           role: 'user',
           content: decryptedPrompt
         });
-        console.log('Added new user message');
       }
 
       // Log only the message structure (roles) for debugging, not content
@@ -126,12 +114,6 @@ export async function POST(request: Request) {
         return acc;
       }, {} as Record<string, number>);
       console.log('Role counts:', roleCounts);
-      
-      // Temporary debugging: log the actual messages being sent
-      console.log('DEBUG: Messages being sent to API:');
-      messages.forEach((msg, index) => {
-        console.log(`  ${index}: role=${msg.role}, content_length=${msg.content.length}`);
-      });
 
       // Validate message format before sending to API
       if (messages.length < 2) {
@@ -162,6 +144,9 @@ export async function POST(request: Request) {
           : msg.content
       }));
 
+      // Use the provided model or default to r1-1776
+      const modelToUse = body.model || 'r1-1776';
+      
       // Call Perplexity API with decrypted data
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -171,7 +156,7 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
         },
         body: JSON.stringify({
-          model: 'r1-1776',
+          model: modelToUse,
           messages,
           max_tokens: 10000,
           temperature: 0.6   // Slightly creative but focused responses
@@ -195,28 +180,18 @@ export async function POST(request: Request) {
       const encryptedResponse = await encryptClientSide(aiResponse, ENCRYPTION_KEY);
       
       return NextResponse.json({
-        response: encryptedResponse
-      }, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'DENY',
-          'X-XSS-Protection': '1; mode=block'
-        }
+        response: encryptedResponse,
+        usage: data.usage
       });
-
-    } catch (encryptionError) {
-      console.error('Encryption/Decryption error:', encryptionError);
+    } catch (decryptionError) {
+      console.error('Decryption error:', decryptionError);
       return NextResponse.json(
-        { error: 'Failed to process encrypted data' },
-        { status: 500 }
+        { error: 'Failed to decrypt request data' },
+        { status: 400 }
       );
     }
-
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('Healing API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

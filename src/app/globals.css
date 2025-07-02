@@ -2,7 +2,7 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
+  --background: #141414;
   --foreground: #171717;
 }
 
@@ -11,11 +11,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-work-sans);
   --font-mono: var(--font-geist-mono);
+  --font-dm-sans: var(--font-dm-sans);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #141414;
     --foreground: #ededed;
   }
 }
@@ -66,6 +67,17 @@ body {
   color: #f3f4f6;
   font-size: 14px;
   line-height: 1.6;
+}
+
+/* Override Tailwind prose hr styles for TipTap editor */
+.ProseMirror hr,
+.prose hr,
+.prose-invert hr {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-top-width: 1px !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  opacity: 1 !important;
 }
 
 .ProseMirror p {
@@ -198,7 +210,16 @@ body {
   -webkit-user-select: text !important;
   -moz-user-select: text !important;
   -ms-user-select: text !important;
-  contain: none !important; /* Remove contain to prevent selection issues */
+}
+
+/* Chat pane font styling with DM Sans */
+.chat-message,
+.chat-message *,
+.chat-message-content,
+.chat-message-content *,
+.messages-container,
+.messages-container * {
+  font-family: var(--font-dm-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Prevent text selection during resize */
@@ -330,8 +351,8 @@ summary {
 .chat-message hr {
   margin: 1.25rem 0;
   border: none;
-  border-top: 1px solid #e5e7eb;
-  opacity: 0.6;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 1;
 }
 
 .chat-message-header {
@@ -730,8 +751,8 @@ summary {
   margin-top: 1.25rem !important;
   margin-bottom: 1.25rem !important;
   border: none !important;
-  border-top: 1px solid #4b5563 !important;
-  opacity: 0.6 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  opacity: 1 !important;
 }
 
 .chat-message-content .prose li > p {

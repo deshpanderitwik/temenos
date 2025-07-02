@@ -110,7 +110,7 @@ export default function NarrativesList({
         } transition-opacity duration-300`}
       >
         <div
-          className={`bg-[#0A0A0A] border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] transform transition-transform duration-300 ${
+          className={`bg-[#141414] border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] transform transition-transform duration-300 ${
             isOpen ? 'scale-100' : 'scale-95'
           }`}
           onClick={(e) => e.stopPropagation()}
@@ -201,7 +201,7 @@ export default function NarrativesList({
             </div>
 
             {/* Footer Info */}
-            <div className="p-6 border-t border-white/10 bg-[#0A0A0A] bg-opacity-50">
+            <div className="p-6 border-t border-white/10 bg-[#141414] bg-opacity-50">
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <div className="flex items-center gap-4">
                   <span>🔒 All narratives are encrypted</span>

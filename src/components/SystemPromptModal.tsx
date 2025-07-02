@@ -137,7 +137,7 @@ export default function SystemPromptModal({
         } transition-opacity duration-300`}
       >
         <div
-          className={`bg-[#0A0A0A] border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] max-h-[90vh] transform transition-transform duration-300 flex flex-col ${
+          className={`bg-[#141414] border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] max-h-[90vh] transform transition-transform duration-300 flex flex-col ${
             isOpen ? 'scale-100' : 'scale-95'
           }`}
           onClick={(e) => e.stopPropagation()}
@@ -180,7 +180,7 @@ export default function SystemPromptModal({
 
                 {/* Save Form */}
                 {showSaveForm && (
-                  <div className="bg-[#0A0A0A] rounded-lg p-4 border border-white/20 flex-shrink-0">
+                  <div className="bg-[#141414] rounded-lg p-4 border border-white/20 flex-shrink-0">
                     <div className="flex items-center gap-3">
                       <input
                         type="text"
@@ -224,7 +224,7 @@ export default function SystemPromptModal({
                       {savedPrompts.map((savedPrompt) => (
                         <div
                           key={savedPrompt.id}
-                          className="p-4 bg-[#0A0A0A] rounded border border-white/20"
+                          className="p-4 bg-[#141414] rounded border border-white/20"
                         >
                           <div className="flex items-start justify-between mb-2">
                             <h4 className="text-white font-medium">{savedPrompt.name}</h4>
@@ -261,7 +261,7 @@ export default function SystemPromptModal({
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      className="flex-1 min-h-[200px] bg-[#0A0A0A] border border-white/20 rounded-lg px-4 py-3 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 min-h-[200px] bg-[#141414] border border-white/20 rounded-lg px-4 py-3 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter your system prompt..."
                     />
                     <p className="text-xs text-gray-500 mt-2 flex-shrink-0">

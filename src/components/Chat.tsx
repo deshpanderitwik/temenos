@@ -20,8 +20,15 @@ export default function Chat() {
   const [showConversations, setShowConversations] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('You are a Jungian therapeutic assistant, helping users explore their psyche through the lens of analytical psychology. Respond with depth, empathy, and wisdom.');
   const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('r1-1776');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Available models
+  const availableModels = [
+    { id: 'r1-1776', name: 'R1-1776', description: 'Fast and efficient' },
+    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' }
+  ];
 
   // Get encryption key from environment
   const encryptionKey = process.env.NEXT_PUBLIC_CLIENT_ENCRYPTION_KEY || process.env.NEXT_PUBLIC_ENCRYPTION_KEY || '';
@@ -145,7 +152,8 @@ export default function Chat() {
         body: JSON.stringify({
           prompt: encryptedPrompt,
           systemPrompt: encryptedSystemPrompt,
-          messages: encryptedMessages
+          messages: encryptedMessages,
+          model: selectedModel
         }),
       });
 
@@ -227,7 +235,7 @@ export default function Chat() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-gray-900">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 messages-container">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 mt-8">
               <div className="text-6xl mb-4">🧘‍♀️</div>
@@ -241,13 +249,13 @@ export default function Chat() {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-3xl px-4 py-2 rounded-lg ${
+                  className={`max-w-3xl px-4 py-2 rounded-lg chat-message ${
                     message.role === 'user'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-100 assistant-message'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  <div className="whitespace-pre-wrap chat-message-content">{message.content}</div>
                 </div>
               </div>
             ))
@@ -282,6 +290,28 @@ export default function Chat() {
             >
               Send
             </button>
+            
+            {/* Model Selection Dropdown */}
+            <div className="relative">
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors appearance-none cursor-pointer text-center"
+                style={{
+                  backgroundImage: 'none',
+                  paddingRight: '16px',
+                  textAlign: 'center'
+                }}
+                disabled={isLoading}
+              >
+                {availableModels.map((model) => (
+                  <option key={model.id} value={model.id} className="bg-gray-800 text-white text-center">
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             <button
               type="button"
               onClick={() => setShowSystemPromptModal(true)}

@@ -44,7 +44,7 @@ export async function GET(
       return NextResponse.json({ error: 'System prompt not found' }, { status: 404 });
     }
   } catch (error) {
-    console.error('Error retrieving system prompt:', error);
+    console.error('Error retrieving system prompt');
     return NextResponse.json({ error: 'Failed to retrieve system prompt' }, { status: 500 });
   }
 }
@@ -68,7 +68,7 @@ export async function DELETE(
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting system prompt:', error);
+    console.error('Error deleting system prompt');
     return NextResponse.json({ error: 'Failed to delete system prompt' }, { status: 500 });
   }
 } 

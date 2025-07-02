@@ -146,7 +146,6 @@ export async function encrypt(text: string, password: string): Promise<string> {
     const result = arrayBufferToBase64(combined);
     return result;
   } catch (error) {
-    console.error('Encryption failed:', error);
     throw new Error('Failed to encrypt data');
   }
 }
@@ -190,7 +189,6 @@ export async function decrypt(encryptedText: string, password: string): Promise<
     const result = decoder.decode(decrypted);
     return result;
   } catch (error) {
-    console.error('Decryption failed:', error);
     throw new Error('Failed to decrypt data');
   }
 }
@@ -260,7 +258,6 @@ export async function encryptClientSide(text: string, key: string): Promise<stri
     const result = arrayBufferToBase64(combined);
     return result;
   } catch (error) {
-    console.error('Client-side encryption failed:', error);
     throw new Error('Failed to encrypt data');
   }
 }
@@ -332,7 +329,6 @@ export async function decryptClientSide(encryptedText: string, key: string): Pro
     const result = decoder.decode(decrypted);
     return result;
   } catch (error) {
-    console.error('Client-side decryption failed:', error);
     throw new Error('Failed to decrypt data');
   }
 }
@@ -348,7 +344,6 @@ export async function testEncryption(testKey: string): Promise<boolean> {
     
     return testMessage === decrypted;
   } catch (error) {
-    console.error('Encryption test failed:', error);
     return false;
   }
 }

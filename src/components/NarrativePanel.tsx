@@ -10,7 +10,7 @@ interface Narrative {
   id: string;
   title: string;
   content: string;
-  draftContent?: string; // Optional draft content stored at the bottom
+  draftContent?: string;
   created: string;
   lastModified: string;
   characterCount: number;
@@ -19,7 +19,6 @@ interface Narrative {
 interface NarrativePanelProps {
   currentNarrative: Narrative | null;
   onNarrativeUpdate: (narrative: Narrative | null) => void;
-  onAddToChat?: (text: string) => void;
   onSave?: () => void;
   isDraftMode: boolean;
   setIsDraftMode: (v: boolean) => void;
@@ -27,89 +26,49 @@ interface NarrativePanelProps {
 
 export interface NarrativePanelRef {
   addTextToContent: (text: string) => void;
-  isDraftMode: boolean;
+  saveCurrentContent: () => Promise<void>;
+  handleModeSwitch: () => Promise<void>;
 }
 
-const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ currentNarrative, onNarrativeUpdate, onAddToChat, onSave, isDraftMode, setIsDraftMode }, ref) => {
-  const [narrativeTitle, setNarrativeTitle] = useState<string>('');
-  const [currentNarrativeId, setCurrentNarrativeId] = useState<string | null>(null);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+// Consolidated narrative state interface
+interface NarrativeState {
+  id: string | null;
+  title: string; // Independent of mode changes - same in both draft and main modes
+  mainContent: string;
+  draftContent: string;
+  lastSaved: Date | null;
+  hasUnsavedChanges: boolean;
+}
+
+const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ currentNarrative, onNarrativeUpdate, onSave, isDraftMode, setIsDraftMode }, ref) => {
+  // Consolidated state - single source of truth
+  const [narrativeState, setNarrativeState] = useState<NarrativeState>({
+    id: null,
+    title: '',
+    mainContent: '',
+    draftContent: '',
+    lastSaved: null,
+    hasUnsavedChanges: false
+  });
+
+  // Simplified state variables
   const [isSaving, setIsSaving] = useState(false);
-  const [saveTimeoutRef] = useState<{ current: NodeJS.Timeout | null }>({ current: null });
-  const [cursorPosition, setCursorPosition] = useState<{ from: number; to: number } | null>(null);
-  const isUpdatingFromSaveRef = useRef(false);
-  
-  // DRAFT/MAIN toggle state
-  const [draftContent, setDraftContent] = useState('');
-  const [mainContent, setMainContent] = useState('');
-
-  // Transition state for smooth animations
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Scroll state for title shrinking and opacity
-  const [isTitleShrunk, setIsTitleShrunk] = useState(false);
+  const [isTitleSaving, setIsTitleSaving] = useState(false);
   const [titleOpacity, setTitleOpacity] = useState(1);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
-  // Test state change
-  useEffect(() => {
-    console.log('titleOpacity changed to:', titleOpacity);
-  }, [titleOpacity]);
+  // Essential refs only
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const titleSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Remove the event handler entirely - let's use CSS hover instead
-
-  // Refs to access current state values in callbacks
-  const draftContentRef = useRef(draftContent);
-  const mainContentRef = useRef(mainContent);
-
-  // Update refs when state changes
-  useEffect(() => {
-    draftContentRef.current = draftContent;
-  }, [draftContent]);
-
-  useEffect(() => {
-    mainContentRef.current = mainContent;
-  }, [mainContent]);
-
-  // Handle scroll for title shrinking and opacity
+  // Simplified scroll handling for title opacity
   const handleScroll = useCallback(() => {
-    // Check all possible scroll sources
-    const tipTapElement = document.querySelector('.ProseMirror');
-    const narrativeEditor = document.querySelector('.narrative-editor');
     const scrollContainer = scrollContainerRef.current;
+    const scrollTop = scrollContainer?.scrollTop || 0;
     
-    let scrollTop = 0;
-    let scrollSource = 'none';
-    
-    if (tipTapElement && tipTapElement.scrollTop > 0) {
-      scrollTop = tipTapElement.scrollTop;
-      scrollSource = 'tipTap';
-    } else if (narrativeEditor && narrativeEditor.scrollTop > 0) {
-      scrollTop = narrativeEditor.scrollTop;
-      scrollSource = 'narrativeEditor';
-    } else if (scrollContainer && scrollContainer.scrollTop > 0) {
-      scrollTop = scrollContainer.scrollTop;
-      scrollSource = 'scrollContainer';
-    } else if (window.scrollY > 0) {
-      scrollTop = window.scrollY;
-      scrollSource = 'window';
-    }
-    
-    console.log('Scroll detected:', { scrollTop, scrollSource }); // Debug log
-    setIsTitleShrunk(scrollTop > 40);
-    
-    // Control title opacity based on scroll position
-    if (scrollTop > 0) {
-      console.log('Setting opacity to 0.4'); // Debug log
-      setTitleOpacity(0.4); // 40% opacity when scrolling
-    } else {
-      console.log('Setting opacity to 1'); // Debug log
-      setTitleOpacity(1); // Full opacity when at top
-    }
+    setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
   }, []);
-
-
 
   const editor = useEditor({
     extensions: [
@@ -128,17 +87,17 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       },
     },
     onUpdate: ({ editor }) => {
-      // Store cursor position before autosave
-      const { from, to } = editor.state.selection;
-      setCursorPosition({ from, to });
-      
-      // Store content based on current mode
       const content = editor.getHTML();
-      if (isDraftMode) {
-        setDraftContent(content);
-      } else {
-        setMainContent(content);
-      }
+      
+      // Update the appropriate content based on current mode
+      setNarrativeState(prev => ({
+        ...prev,
+        ...(isDraftMode 
+          ? { draftContent: content }
+          : { mainContent: content }
+        ),
+        hasUnsavedChanges: true
+      }));
       
       // Auto-save functionality
       if (saveTimeoutRef.current) {
@@ -146,180 +105,58 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       }
       
       saveTimeoutRef.current = setTimeout(() => {
-        if (isDraftMode) {
-          saveDraftContent();
-        } else {
-          saveNarrative();
-        }
-      }, 2000); // Auto-save after 2 seconds of inactivity
+        handleAutoSave(content);
+      }, 500);
     },
   });
 
-
-
-  // Handle side effects of draft mode changes
-  useEffect(() => {
-    if (!editor) return;
-    
-    // Start transition animation
-    setIsTransitioning(true);
-    
-    // Fade out current content
-    const fadeOutDuration = 200; // 200ms fade out for snappy transition
-    
-    setTimeout(() => {
-      if (isDraftMode) {
-        // Load draft content into editor with placeholder if empty
-        const draftContentToLoad = draftContentRef.current || '<p class="is-editor-empty" data-placeholder="Start your draft here... Sketch your ideas, thoughts, and rough notes before moving them to the main narrative."></p>';
-        editor.commands.setContent(draftContentToLoad);
-        
-        // Update placeholder for draft mode
-        const placeholderExtension = editor.extensionManager.extensions.find(ext => ext.name === 'placeholder');
-        if (placeholderExtension) {
-          placeholderExtension.options.placeholder = 'Start your draft here... Sketch your ideas, thoughts, and rough notes before moving them to the main narrative.';
-        }
-      } else {
-        // Load main content into editor
-        editor.commands.setContent(mainContentRef.current || '<p></p>');
-        
-        // Update placeholder for main mode
-        const placeholderExtension = editor.extensionManager.extensions.find(ext => ext.name === 'placeholder');
-        if (placeholderExtension) {
-          placeholderExtension.options.placeholder = 'Begin writing your narrative here... Share your thoughts, insights, and the story that emerges from your exploration.';
-        }
-      }
-      
-      // Fade in new content immediately after content is loaded
-      setIsTransitioning(false);
-    }, fadeOutDuration);
-  }, [isDraftMode, editor]);
-
-  // Add scroll listener after editor is ready
-  useEffect(() => {
-    if (!editor) return;
-    
-    // Wait a bit for the editor to be fully rendered
-    const timeoutId = setTimeout(() => {
-      // Try multiple possible scrollable elements
-      const tipTapElement = document.querySelector('.ProseMirror');
-      const narrativeEditor = document.querySelector('.narrative-editor');
-      const scrollContainer = scrollContainerRef.current;
-      
-      console.log('Found elements:', {
-        tipTap: !!tipTapElement,
-        narrativeEditor: !!narrativeEditor,
-        scrollContainer: !!scrollContainer
-      });
-      
-      // Add listeners to all possible scrollable elements
-      const elements = [tipTapElement, narrativeEditor, scrollContainer].filter(Boolean);
-      
-      elements.forEach(element => {
-        if (element) {
-          console.log('Adding scroll listener to:', element.className || element.tagName);
-          element.addEventListener('scroll', handleScroll);
-        }
-      });
-      
-      // Also add to window as fallback
-      window.addEventListener('scroll', handleScroll);
-      
-      // Cleanup function
-      return () => {
-        elements.forEach(element => {
-          if (element) {
-            element.removeEventListener('scroll', handleScroll);
-          }
-        });
-        window.removeEventListener('scroll', handleScroll);
-      };
-    }, 200);
-    
-    return () => clearTimeout(timeoutId);
-  }, [editor, handleScroll]);
-
-  const copyFromDraftToMain = useCallback(() => {
-    if (!editor || !isDraftMode) return;
-    
-    const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to);
-    
-    if (selectedText.trim()) {
-      // Add to main content by appending to the existing paragraph
-      setMainContent(prevContent => {
-        const newMainContent = prevContent.replace(/<\/p>$/, ` ${selectedText}</p>`);
-        return newMainContent;
-      });
-        
-      // Don't remove from draft content - just copy it
-      // The selected text remains in the draft
-        
-      // Show feedback
-      showCopyFeedback();
-    }
-  }, [editor]);
-
-  // Load narrative data when currentNarrative changes
-  useEffect(() => {
-    if (currentNarrative) {
-      setNarrativeTitle(currentNarrative.title || '');
-      setCurrentNarrativeId(currentNarrative.id);
-      setMainContent(currentNarrative.content || '');
-      setDraftContent(currentNarrative.draftContent || '');
-      
-      // Load the appropriate content into the editor
-      if (editor) {
-        if (isDraftMode) {
-          editor.commands.setContent(currentNarrative.draftContent || '<p></p>');
-        } else {
-          editor.commands.setContent(currentNarrative.content || '<p></p>');
-        }
-      }
-    } else {
-      // Reset to default state when no narrative is selected
-      setNarrativeTitle('');
-      setCurrentNarrativeId(null);
-      setMainContent('');
-      setDraftContent('');
-      setLastSaved(null);
-      
-      if (editor) {
-        editor.commands.setContent('<p></p>');
-      }
-    }
-  }, [currentNarrative, editor, isDraftMode]);
-
-  // Restore cursor position after content updates
-  useEffect(() => {
-    if (cursorPosition && editor && !isUpdatingFromSaveRef.current) {
-      try {
-        const { from, to } = cursorPosition;
-        const docSize = editor.state.doc.content.size;
-        
-        // Ensure cursor position is within document bounds
-        const safeFrom = Math.min(from, docSize);
-        const safeTo = Math.min(to, docSize);
-        
-        editor.commands.setTextSelection({ from: safeFrom, to: safeTo });
-      } catch (error) {
-        // Silently handle cursor restoration errors
-      }
-    }
-  }, [cursorPosition, editor]);
-
-  const saveNarrative = async () => {
-    if (!editor || isUpdatingFromSaveRef.current) return;
+  // Auto-save handler to avoid circular dependency
+  const handleAutoSave = useCallback(async (content: string) => {
+    if (isSaving) return;
     
     setIsSaving(true);
-    isUpdatingFromSaveRef.current = true;
     
     try {
-      const content = editor.getHTML();
-      const titleToSave = narrativeTitle || 'New Narrative';
+      const titleToSave = narrativeState.title || 'New Narrative';
       
       // Determine what to save based on current mode
-      const contentToSave = isDraftMode ? draftContentRef.current : content;
-      const draftContentToSave = isDraftMode ? content : draftContentRef.current;
+      const contentToSave = isDraftMode ? narrativeState.mainContent : content;
+      const draftContentToSave = isDraftMode ? content : narrativeState.draftContent;
+      
+      // Skip save if content is empty (but always save title)
+      if (!contentToSave || contentToSave.trim() === '' || contentToSave === '<p></p>') {
+        // Still save if we have a title to preserve
+        if (titleToSave && titleToSave !== 'New Narrative') {
+          const response = await fetch('/api/narratives', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: narrativeState.id,
+              title: titleToSave,
+              content: narrativeState.mainContent,
+              draftContent: narrativeState.draftContent,
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.narrative) {
+              onNarrativeUpdate(data.narrative);
+            }
+          }
+        }
+        return;
+      }
+      
+      console.log('Auto-saving narrative:', {
+        id: narrativeState.id,
+        title: titleToSave,
+        contentLength: contentToSave.length,
+        draftContentLength: draftContentToSave?.length || 0,
+        isDraftMode
+      });
       
       const response = await fetch('/api/narratives', {
         method: 'POST',
@@ -327,17 +164,27 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: currentNarrativeId,
+          id: narrativeState.id,
           title: titleToSave,
           content: contentToSave,
           draftContent: draftContentToSave,
         }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Auto-save failed with status:', response.status, 'Response:', errorText);
+        throw new Error(`Auto-save failed: ${response.status} ${errorText}`);
+      }
+
       const data = await response.json();
       
       if (data.success) {
-        setLastSaved(new Date());
+        setNarrativeState(prev => ({
+          ...prev,
+          lastSaved: new Date(),
+          hasUnsavedChanges: false
+        }));
         
         // Trigger save feedback
         onSave?.();
@@ -347,23 +194,62 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           onNarrativeUpdate(data.narrative);
         }
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Error auto-saving narrative:', error);
     } finally {
       setIsSaving(false);
-      isUpdatingFromSaveRef.current = false;
     }
-  };
+  }, [isSaving, narrativeState, isDraftMode, onSave, onNarrativeUpdate]);
 
-  const saveDraftContent = async () => {
-    if (!editor || isUpdatingFromSaveRef.current) return;
+  // Unified save function - handles both main and draft content
+  const saveNarrative = useCallback(async (content?: string) => {
+    if (isSaving) return;
     
     setIsSaving(true);
-    isUpdatingFromSaveRef.current = true;
     
     try {
-      const content = editor.getHTML();
-      const titleToSave = narrativeTitle || 'New Narrative';
+      // Get current editor content if not provided
+      const currentContent = content || editor?.getHTML() || '';
+      const titleToSave = narrativeState.title || 'New Narrative';
+      
+      // Determine what to save based on current mode
+      const contentToSave = isDraftMode ? narrativeState.mainContent : currentContent;
+      const draftContentToSave = isDraftMode ? currentContent : narrativeState.draftContent;
+      
+      // Skip save if content is empty (but always save title)
+      if (!contentToSave || contentToSave.trim() === '' || contentToSave === '<p></p>') {
+        // Still save if we have a title to preserve
+        if (titleToSave && titleToSave !== 'New Narrative') {
+          const response = await fetch('/api/narratives', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: narrativeState.id,
+              title: titleToSave,
+              content: narrativeState.mainContent,
+              draftContent: narrativeState.draftContent,
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.narrative) {
+              onNarrativeUpdate(data.narrative);
+            }
+          }
+        }
+        return;
+      }
+      
+      console.log('Saving narrative:', {
+        id: narrativeState.id,
+        title: titleToSave,
+        contentLength: contentToSave.length,
+        draftContentLength: draftContentToSave?.length || 0,
+        isDraftMode
+      });
       
       const response = await fetch('/api/narratives', {
         method: 'POST',
@@ -371,145 +257,338 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: currentNarrativeId,
+          id: narrativeState.id,
           title: titleToSave,
-          content: mainContentRef.current, // Keep existing main content
-          draftContent: content, // Save current draft content
+          content: contentToSave,
+          draftContent: draftContentToSave,
         }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Save failed with status:', response.status, 'Response:', errorText);
+        throw new Error(`Save failed: ${response.status} ${errorText}`);
+      }
 
       const data = await response.json();
       
       if (data.success) {
-        setLastSaved(new Date());
+        setNarrativeState(prev => ({
+          ...prev,
+          lastSaved: new Date(),
+          hasUnsavedChanges: false
+        }));
         
         // Trigger save feedback
         onSave?.();
+        
+        // Update parent state with the saved narrative
+        if (data.narrative) {
+          onNarrativeUpdate(data.narrative);
+        }
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Error saving narrative:', error);
     } finally {
       setIsSaving(false);
-      isUpdatingFromSaveRef.current = false;
     }
-  };
+  }, [isSaving, narrativeState, isDraftMode, onSave, onNarrativeUpdate, editor]);
 
-  const startNewNarrative = () => {
-    setNarrativeTitle(''); // Start with empty title to allow proper cursor placement
-    setCurrentNarrativeId(null);
-    setLastSaved(null);
-    setMainContent('');
-    setDraftContent('');
-    setIsDraftMode(false);
-    editor?.commands.setContent('');
-    // Clear parent state by passing null
-    onNarrativeUpdate(null);
-  };
-
-  // Calculate word count from editor content
-  const getWordCount = () => {
-    if (!editor) return 0;
-    const text = editor.getText();
-    return text.trim() ? text.trim().split(/\s+/).length : 0;
-  };
-
-  const showCopyFeedback = () => {
-    // Create a temporary feedback element
-    const feedback = document.createElement('div');
-    feedback.textContent = 'Text copied to main narrative';
-    feedback.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
-    document.body.appendChild(feedback);
+  // Add scroll listener to the scroll container
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
     
-    // Remove after 2 seconds
-    setTimeout(() => {
-      feedback.style.opacity = '0';
-      setTimeout(() => document.body.removeChild(feedback), 300);
-    }, 2000);
-  };
+    scrollContainer.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (titleSaveTimeoutRef.current) {
+        clearTimeout(titleSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Load narrative data when currentNarrative changes
+  useEffect(() => {
+    if (currentNarrative) {
+      setNarrativeState(prev => {
+        // Only update title if we're loading a different narrative
+        const shouldUpdateTitle = prev.id !== currentNarrative.id;
+        
+        console.log('Loading narrative:', {
+          prevId: prev.id,
+          currentId: currentNarrative.id,
+          prevTitle: prev.title,
+          narrativeTitle: currentNarrative.title,
+          shouldUpdateTitle
+        });
+        
+        return {
+          id: currentNarrative.id,
+          title: shouldUpdateTitle ? (currentNarrative.title || '') : prev.title,
+          mainContent: currentNarrative.content || '',
+          draftContent: currentNarrative.draftContent || '',
+          lastSaved: null,
+          hasUnsavedChanges: prev.id === currentNarrative.id ? prev.hasUnsavedChanges : false
+        };
+      });
+    } else {
+      // Reset to default state when no narrative is selected
+      setNarrativeState({
+        id: null,
+        title: '',
+        mainContent: '',
+        draftContent: '',
+        lastSaved: null,
+        hasUnsavedChanges: false
+      });
+      
+      if (editor) {
+        editor.commands.setContent('<p></p>');
+      }
+    }
+  }, [currentNarrative, editor]);
+
+  // Separate effect to handle content loading based on mode changes
+  useEffect(() => {
+    if (currentNarrative && editor) {
+      // Load the appropriate content into the editor based on current mode
+      const contentToLoad = isDraftMode 
+        ? currentNarrative.draftContent || '<p></p>'
+        : currentNarrative.content || '<p></p>';
+      editor.commands.setContent(contentToLoad);
+    }
+  }, [currentNarrative, editor, isDraftMode]);
 
   // Function to add text to the appropriate content (main or draft)
   const addTextToContent = useCallback((text: string) => {
-    if (isDraftMode) {
-      // Add to draft content
-      setDraftContent(prevContent => {
-        const newContent = prevContent.replace(/<\/p>$/, ` ${text}</p>`);
-        return newContent;
-      });
-      
-      // If we're currently in draft mode, update the editor
-      if (editor) {
-        const currentContent = editor.getHTML();
-        const newContent = currentContent.replace(/<\/p>$/, ` ${text}</p>`);
-        editor.commands.setContent(newContent);
-      }
-    } else {
-      // Add to main content
-      setMainContent(prevContent => {
-        const newContent = prevContent.replace(/<\/p>$/, ` ${text}</p>`);
-        return newContent;
-      });
-      
-      // If we're currently in main mode, update the editor
-      if (editor) {
-        const currentContent = editor.getHTML();
-        const newContent = currentContent.replace(/<\/p>$/, ` ${text}</p>`);
-        editor.commands.setContent(newContent);
-      }
-    }
+    if (!editor) return;
+    
+    const formattedText = text
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .map(line => `<p>${line.trim()}</p>`)
+      .join('');
+    
+    // Update state based on current mode
+    setNarrativeState(prev => ({
+      ...prev,
+      ...(isDraftMode 
+        ? { draftContent: prev.draftContent.replace(/<\/p>$/, formattedText) }
+        : { mainContent: prev.mainContent.replace(/<\/p>$/, formattedText) }
+      ),
+      hasUnsavedChanges: true
+    }));
+    
+    // Update editor content
+    const currentContent = editor.getHTML();
+    const newContent = currentContent.replace(/<\/p>$/, formattedText);
+    editor.commands.setContent(newContent);
   }, [isDraftMode, editor]);
+
+  // Implemented save function
+  const saveCurrentContent = async () => {
+    if (!editor) return;
+    await saveNarrative();
+  };
+
+  const handleModeSwitch = useCallback(async () => {
+    if (!editor) return;
+    
+    console.log('Mode switch - before save:', {
+      currentTitle: narrativeState.title,
+      isDraftMode,
+      hasUnsavedChanges: narrativeState.hasUnsavedChanges
+    });
+    
+    // Save current content before switching (title is preserved in narrativeState)
+    const currentContent = editor.getHTML();
+    await saveNarrative(currentContent);
+    
+    // Toggle the mode
+    const newMode = !isDraftMode;
+    setIsDraftMode(newMode);
+    
+    // Load the appropriate content for the new mode (title remains unchanged)
+    const contentToLoad = newMode 
+      ? narrativeState.draftContent || '<p></p>'
+      : narrativeState.mainContent || '<p></p>';
+    
+    editor.commands.setContent(contentToLoad);
+    
+    console.log('Mode switched to:', newMode ? 'draft' : 'main', 'Title preserved:', narrativeState.title);
+  }, [editor, isDraftMode, narrativeState, saveNarrative, setIsDraftMode]);
 
   // Expose functions to parent component via ref
   useImperativeHandle(ref, () => ({
     addTextToContent,
-    isDraftMode
-  }), [addTextToContent, isDraftMode]);
+    saveCurrentContent,
+    handleModeSwitch
+  }), [addTextToContent, saveCurrentContent, handleModeSwitch]);
 
   NarrativePanel.displayName = 'NarrativePanel';
 
   return (
-    <div className="h-full flex flex-col bg-[#0A0A0A]">
+    <div className="h-full flex flex-col bg-[#141414]">
       {/* Title and Editor Content grouped for unified nudge */}
-      <div className="narrative-content-wrapper pt-7 pl-4 h-full flex flex-col">
+      <div className="narrative-content-wrapper pt-6 pl-4 h-full flex flex-col">
         <div className="max-w-[42em] mx-auto px-6" style={{ 
           marginLeft: 'calc(max(0px, 50% - 21em - 4px))'
         }}>
-          <input
-            type="text"
-            className="narrative-title text-xl font-semibold text-white outline-none border-none bg-transparent w-full transition-all duration-200"
-            value={narrativeTitle}
-            onChange={e => {
-              setNarrativeTitle(e.target.value);
-            }}
-            onBlur={e => {
-              setNarrativeTitle(e.target.value.trim());
-              setIsTitleFocused(false);
-              if (titleOpacity === 0.95) {
-                setTitleOpacity(0.4);
-              }
-            }}
-            onMouseEnter={() => {
-              if (titleOpacity < 1) {
+          {/* Title is independent of mode changes - remains the same in both draft and main modes */}
+          <div className="relative">
+            <input
+              type="text"
+              className="narrative-title text-xl font-semibold text-white outline-none border-none bg-transparent w-full transition-all duration-200"
+              value={narrativeState.title}
+              onChange={e => {
+                const newTitle = e.target.value;
+                setNarrativeState(prev => ({
+                  ...prev,
+                  title: newTitle,
+                  hasUnsavedChanges: true
+                }));
+                
+                // Clear any existing timeout
+                if (titleSaveTimeoutRef.current) {
+                  clearTimeout(titleSaveTimeoutRef.current);
+                }
+                
+                // Set a new timeout to save the title after a delay
+                titleSaveTimeoutRef.current = setTimeout(async () => {
+                  if (newTitle && newTitle !== 'New Narrative' && newTitle !== currentNarrative?.title) {
+                    setIsTitleSaving(true);
+                    try {
+                      const response = await fetch('/api/narratives', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          id: narrativeState.id,
+                          title: newTitle,
+                          content: narrativeState.mainContent,
+                          draftContent: narrativeState.draftContent,
+                        }),
+                      });
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.narrative) {
+                          onNarrativeUpdate(data.narrative);
+                          setNarrativeState(prev => ({
+                            ...prev,
+                            lastSaved: new Date(),
+                            hasUnsavedChanges: false
+                          }));
+                          // Trigger save feedback for green button effect
+                          onSave?.();
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error saving title:', error);
+                    } finally {
+                      setIsTitleSaving(false);
+                    }
+                  }
+                }, 1000); // Save after 1 second of no typing
+              }}
+              onBlur={async e => {
+                const trimmedTitle = e.target.value.trim();
+                setNarrativeState(prev => ({
+                  ...prev,
+                  title: trimmedTitle
+                }));
+                setIsTitleFocused(false);
+                
+                const scrollContainer = scrollContainerRef.current;
+                const scrollTop = scrollContainer?.scrollTop || 0;
+                setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
+                
+                // Clear any pending timeout
+                if (titleSaveTimeoutRef.current) {
+                  clearTimeout(titleSaveTimeoutRef.current);
+                }
+                
+                // Save immediately when title is changed
+                if (trimmedTitle && trimmedTitle !== 'New Narrative' && trimmedTitle !== currentNarrative?.title) {
+                  setIsTitleSaving(true);
+                  try {
+                    const response = await fetch('/api/narratives', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        id: narrativeState.id,
+                        title: trimmedTitle,
+                        content: narrativeState.mainContent,
+                        draftContent: narrativeState.draftContent,
+                      }),
+                    });
+                    
+                    if (response.ok) {
+                      const data = await response.json();
+                      if (data.success && data.narrative) {
+                        onNarrativeUpdate(data.narrative);
+                        setNarrativeState(prev => ({
+                          ...prev,
+                          lastSaved: new Date(),
+                          hasUnsavedChanges: false
+                        }));
+                        // Trigger save feedback for green button effect
+                        onSave?.();
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error saving title:', error);
+                  } finally {
+                    setIsTitleSaving(false);
+                  }
+                }
+              }}
+              onMouseEnter={() => {
+                if (titleOpacity < 1) {
+                  setTitleOpacity(0.95);
+                }
+              }}
+              onMouseLeave={() => {
+                if (!isTitleFocused) {
+                  const scrollContainer = scrollContainerRef.current;
+                  const scrollTop = scrollContainer?.scrollTop || 0;
+                  setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
+                }
+              }}
+              onFocus={() => {
+                setIsTitleFocused(true);
                 setTitleOpacity(0.95);
-              }
-            }}
-            onMouseLeave={() => {
-              if (titleOpacity === 0.95 && !isTitleFocused) {
-                setTitleOpacity(0.4);
-              }
-            }}
-            onFocus={() => {
-              setIsTitleFocused(true);
-              setTitleOpacity(0.95);
-            }}
-            placeholder="Untitled Narrative"
-            style={{ 
-              fontFamily: 'var(--font-eczar), Georgia, "Times New Roman", serif',
-              minHeight: '1.5rem',
-              opacity: titleOpacity,
-              transition: 'opacity 0.2s ease-in-out',
-              cursor: titleOpacity < 1 ? 'pointer' : 'text'
-            }}
-          />
+              }}
+              placeholder="New Narrative"
+              style={{ 
+                fontFamily: 'var(--font-eczar), Georgia, "Times New Roman", serif',
+                minHeight: '1.5rem',
+                opacity: titleOpacity,
+                transition: 'opacity 0.2s ease-in-out',
+                cursor: titleOpacity < 1 ? 'pointer' : 'text'
+              }}
+            />
+            {/* Visual indicator for title saving */}
+            {isTitleSaving && (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-white rounded-full animate-spin"></div>
+              </div>
+            )}
+          </div>
         </div>
         {/* Editor Content */}
         <div className="flex-1 overflow-hidden min-h-0 relative">
@@ -519,15 +598,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           >
             <EditorContent 
               editor={editor} 
-              className={`narrative-editor bg-[#0A0A0A] transition-opacity duration-250 ${
-                isTransitioning ? 'opacity-0' : 'opacity-100'
-              }`}
+              className="narrative-editor bg-[#141414]"
             />
             {/* Gradient mask overlay at the top of the editor */}
             <div 
               className="absolute top-0 left-0 right-0 h-8 pointer-events-none z-10"
               style={{
-                background: 'linear-gradient(to bottom, #0A0A0A 0%, rgba(10, 10, 10, 0.8) 50%, rgba(10, 10, 10, 0) 100%)'
+                background: 'linear-gradient(to bottom, #141414 0%, rgba(20, 20, 20, 0.8) 50%, rgba(20, 20, 20, 0) 100%)'
               }}
             />
           </div>
