@@ -74,20 +74,16 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
   // Simplified state variables
   const [isSaving, setIsSaving] = useState(false);
-  const [titleOpacity, setTitleOpacity] = useState(1);
+  const [titleOpacity, setTitleOpacity] = useState(0.95);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   
   // Essential refs only
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isAutoSavingRef = useRef(false);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Simplified scroll handling for title opacity
-  const handleScroll = useCallback(() => {
-    const scrollContainer = scrollContainerRef.current;
-    const scrollTop = scrollContainer?.scrollTop || 0;
-    
-    setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
-  }, []);
+
 
   const editor = useEditor({
     extensions: [
@@ -116,15 +112,22 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     onUpdate: ({ editor }) => {
       const content = editor.getHTML();
       
-      // Update the appropriate content based on current mode
-      setNarrativeState(prev => ({
-        ...prev,
-        ...(isDraftMode 
-          ? { draftContent: content }
-          : { mainContent: content }
-        ),
-        hasUnsavedChanges: true
-      }));
+      // Debounce state updates to prevent cursor jumping during rapid typing
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      
+      updateTimeoutRef.current = setTimeout(() => {
+        // Update the appropriate content based on current mode
+        setNarrativeState(prev => ({
+          ...prev,
+          ...(isDraftMode 
+            ? { draftContent: content }
+            : { mainContent: content }
+          ),
+          hasUnsavedChanges: true
+        }));
+      }, 100); // Short debounce for state updates
       
       // Auto-save functionality
       if (saveTimeoutRef.current) {
@@ -163,10 +166,55 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     },
   });
 
+  // Enhanced scroll handling for title opacity with smooth transitions
+  const handleScroll = useCallback(() => {
+    // Find the actual scrollable container
+    const editorElement = editor?.view?.dom;
+    if (!editorElement) return;
+    
+    // Find the scrollable parent container - try different overflow values
+    let scrollableContainer = editorElement.parentElement;
+    while (scrollableContainer && 
+           getComputedStyle(scrollableContainer).overflowY !== 'auto' &&
+           getComputedStyle(scrollableContainer).overflowY !== 'scroll' &&
+           getComputedStyle(scrollableContainer).overflow !== 'auto' &&
+           getComputedStyle(scrollableContainer).overflow !== 'scroll') {
+      scrollableContainer = scrollableContainer.parentElement;
+    }
+    
+    if (!scrollableContainer) {
+      return;
+    }
+    
+    const scrollTop = scrollableContainer.scrollTop;
+    const maxScroll = scrollableContainer.scrollHeight - scrollableContainer.clientHeight;
+    
+
+    
+    // Calculate opacity based on scroll position with smooth transition
+    // Start fading when scroll > 50px, fully faded at 200px
+    const fadeStart = 50;
+    const fadeEnd = 200;
+    
+    let newOpacity;
+    if (scrollTop <= fadeStart) {
+      newOpacity = 0.95;
+    } else if (scrollTop >= fadeEnd) {
+      newOpacity = 0.15;
+    } else {
+      // Smooth transition between fadeStart and fadeEnd
+      const fadeProgress = (scrollTop - fadeStart) / (fadeEnd - fadeStart);
+      newOpacity = 0.95 - (fadeProgress * 0.8); // 0.95 to 0.15
+    }
+    
+    setTitleOpacity(newOpacity);
+  }, [editor]);
+
   // Auto-save handler to avoid circular dependency
   const handleAutoSave = useCallback(async (content: string) => {
     if (isSaving) return;
     
+    isAutoSavingRef.current = true;
     setIsSaving(true);
     
     try {
@@ -196,7 +244,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.narrative) {
-              onNarrativeUpdate(data.narrative);
+              // Don't trigger onNarrativeUpdate during auto-save to prevent cursor jumping
+              // Only update local state
+              setNarrativeState(prev => ({
+                ...prev,
+                lastSaved: new Date(),
+                hasUnsavedChanges: false
+              }));
             }
           }
         }
@@ -233,17 +287,16 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         // Trigger save feedback
         onSave?.();
         
-        // Update parent state with the saved narrative
-        if (data.narrative) {
-          onNarrativeUpdate(data.narrative);
-        }
+        // Don't trigger onNarrativeUpdate during auto-save to prevent cursor jumping
+        // Only update parent state on manual saves or mode switches
       }
     } catch (error) {
       // Silent error handling for privacy
     } finally {
       setIsSaving(false);
+      isAutoSavingRef.current = false;
     }
-  }, [isSaving, narrativeState, isDraftMode, onSave, onNarrativeUpdate]);
+  }, [isSaving, narrativeState, isDraftMode, onSave]);
 
   // Unified save function - handles both main and draft content
   const saveNarrative = useCallback(async (content?: string) => {
@@ -280,7 +333,10 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.narrative) {
-              onNarrativeUpdate(data.narrative);
+              // Only update parent state if this is a manual save (not auto-save)
+              if (content) {
+                onNarrativeUpdate(data.narrative);
+              }
             }
           }
         }
@@ -317,8 +373,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         // Trigger save feedback
         onSave?.();
         
-        // Update parent state with the saved narrative
-        if (data.narrative) {
+        // Only update parent state if this is a manual save (not auto-save)
+        if (content && data.narrative) {
           onNarrativeUpdate(data.narrative);
         }
       }
@@ -329,23 +385,52 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     }
   }, [isSaving, narrativeState, isDraftMode, onSave, onNarrativeUpdate, editor]);
 
-  // Add scroll listener to the scroll container
+  // Add scroll listener to the actual scrollable container
   useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return;
+    // Wait for the editor to be ready
+    if (!editor) return;
     
-    scrollContainer.addEventListener('scroll', handleScroll);
+    // Find the actual scrollable container - it's the parent of the TipTap editor
+    const editorElement = editor.view?.dom;
+    if (!editorElement) {
+      return;
+    }
+    
+
+    
+    // Find the scrollable parent container - try different overflow values
+    let scrollableContainer = editorElement.parentElement;
+    while (scrollableContainer && 
+           getComputedStyle(scrollableContainer).overflowY !== 'auto' &&
+           getComputedStyle(scrollableContainer).overflowY !== 'scroll' &&
+           getComputedStyle(scrollableContainer).overflow !== 'auto' &&
+           getComputedStyle(scrollableContainer).overflow !== 'scroll') {
+      scrollableContainer = scrollableContainer.parentElement;
+    }
+    
+    if (!scrollableContainer) {
+      return;
+    }
+    
+    // Add scroll listener to the actual scrollable container
+    scrollableContainer.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial opacity calculation
+    handleScroll();
     
     return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollableContainer.removeEventListener('scroll', handleScroll);
     };
-  }, [handleScroll]);
+  }, [handleScroll, editor]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+      }
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
     };
   }, []);
@@ -385,7 +470,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
   // Separate effect to handle content loading based on mode changes
   useEffect(() => {
-    if (currentNarrative && editor) {
+    if (currentNarrative && editor && !isAutoSavingRef.current) {
       // Load the appropriate content into the editor based on current mode
       const contentToLoad = isDraftMode 
         ? currentNarrative.draftContent || '<p></p>'
@@ -394,8 +479,31 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       // Only update editor content if it's actually different from current content
       // This prevents losing user input when auto-save triggers a re-render
       const currentEditorContent = editor.getHTML();
-      if (currentEditorContent !== contentToLoad) {
+      
+      // Normalize content for comparison to avoid whitespace differences
+      const normalizeContent = (content: string) => {
+        return content.replace(/\s+/g, ' ').trim();
+      };
+      
+      const normalizedCurrent = normalizeContent(currentEditorContent);
+      const normalizedToLoad = normalizeContent(contentToLoad);
+      
+      if (normalizedCurrent !== normalizedToLoad) {
+        // Preserve cursor position by storing it before content update
+        const { from, to } = editor.state.selection;
+        
         editor.commands.setContent(contentToLoad, false);
+        
+        // Restore cursor position if it's still valid
+        try {
+          const newState = editor.state;
+          if (from <= newState.doc.content.size && to <= newState.doc.content.size) {
+            editor.commands.setTextSelection({ from, to });
+          }
+        } catch (error) {
+          // If cursor position is invalid, just place it at the end
+          editor.commands.focus('end');
+        }
       }
     }
   }, [currentNarrative, editor, isDraftMode]);
@@ -507,9 +615,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 }));
                 setIsTitleFocused(false);
                 
-                const scrollContainer = scrollContainerRef.current;
-                const scrollTop = scrollContainer?.scrollTop || 0;
-                setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
+                // Recalculate opacity based on current scroll position
+                handleScroll();
                 
                 // Clear any pending timeout and save immediately
                 if (saveTimeoutRef.current) {
@@ -526,9 +633,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
               }}
               onMouseLeave={() => {
                 if (!isTitleFocused) {
-                  const scrollContainer = scrollContainerRef.current;
-                  const scrollTop = scrollContainer?.scrollTop || 0;
-                  setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
+                  // Recalculate opacity based on current scroll position
+                  handleScroll();
                 }
               }}
               onFocus={() => {
@@ -540,8 +646,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 fontFamily: 'var(--font-eczar), Georgia, "Times New Roman", serif',
                 minHeight: '1.5rem',
                 opacity: titleOpacity,
-                transition: 'opacity 0.2s ease-in-out',
-                cursor: titleOpacity < 1 ? 'pointer' : 'text'
+                transition: 'opacity 0.3s ease-out',
+                cursor: titleOpacity < 0.95 ? 'pointer' : 'text'
               }}
             />
           </div>
