@@ -12,10 +12,6 @@ interface ItemListBrowserProps<T> {
   renderItemDate: (item: T) => React.ReactNode;
   getItemId: (item: T) => string;
   newItemLabel?: string;
-  emptyIcon?: React.ReactNode;
-  emptyTitle?: string;
-  emptyDescription?: string;
-  loading?: boolean;
   canDeleteItem?: (item: T) => boolean;
   closeOnNewItem?: boolean;
   renderItemActions?: (item: T) => React.ReactNode;
@@ -33,10 +29,6 @@ export default function ItemListBrowser<T>({
   renderItemDate,
   getItemId,
   newItemLabel = '+ New Item',
-  emptyIcon = '📄',
-  emptyTitle = 'No items yet',
-  emptyDescription = 'Start your first item!',
-  loading = false,
   canDeleteItem,
   closeOnNewItem = true,
   renderItemActions,
@@ -58,7 +50,7 @@ export default function ItemListBrowser<T>({
               onClick={e => e.stopPropagation()}
             >
               {/* New Item Button */}
-              <div className="flex justify-center px-6 pt-6 pb-4">
+              <div className="flex justify-center px-4 pt-6 pb-4">
                 <button
                   onClick={() => {
                     onNewItem();
@@ -71,31 +63,20 @@ export default function ItemListBrowser<T>({
               </div>
 
               {/* List */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-2">
-                {loading ? (
-                  <div className="text-gray-400 text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    Loading...
-                  </div>
-                ) : items.length === 0 ? (
-                  <div className="text-gray-400 text-center py-12">
-                    <div className="text-6xl mb-4">{emptyIcon}</div>
-                    <h3 className="text-xl font-medium mb-2">{emptyTitle}</h3>
-                    <p className="text-gray-500">{emptyDescription}</p>
-                  </div>
-                ) : (
+              <div className="flex-1 min-h-0 overflow-y-auto p-2 scrollbar-hide">
+                {items.length > 0 && (
                   <div>
                     {items.map((item, index) => {
                       const id = getItemId(item);
                       const deletable = canDeleteItem ? canDeleteItem(item) : true;
                       return (
-                        <div key={id} className={index < items.length - 1 ? 'pb-1' : ''}>
+                        <div key={id}>
                           <div
                             onClick={() => {
                               onItemSelect(item);
                               onClose();
                             }}
-                            className={`flex items-center justify-between px-6 py-4 cursor-pointer transition-all ${
+                            className={`flex items-center justify-between px-4 py-4 cursor-pointer transition-all ${
                               currentItemId === id
                                 ? 'bg-[rgba(255,255,255,0.1)] rounded-[12px]' : 'hover:bg-white/5 hover:rounded-[12px]'
                             }`}

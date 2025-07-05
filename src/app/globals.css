@@ -201,6 +201,16 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 /* Ensure text selection works properly in chat messages */
 .chat-message-content,
 .chat-message-content *,
@@ -295,6 +305,7 @@ summary {
 /* Single-column chat layout optimizations */
 .chat-message {
   margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
 }
 
 .chat-message p {
@@ -1128,13 +1139,17 @@ summary {
 /* Prevent layout shifts when scrollbars appear/disappear */
 .narrative-editor {
   overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent; /* Firefox */
+  scrollbar-width: none; /* Firefox - hide scrollbar */
+  -ms-overflow-style: none; /* Internet Explorer 10+ - hide scrollbar */
+}
+
+.narrative-editor::-webkit-scrollbar {
+  display: none; /* Safari and Chrome - hide scrollbar */
 }
 
 /* Ensure consistent spacing for narrative editor content */
 .narrative-editor .ProseMirror {
-  padding-right: 8px; /* Account for scrollbar width */
+  padding-right: 0; /* No need to account for scrollbar width since it's hidden */
   box-sizing: border-box;
 }
 

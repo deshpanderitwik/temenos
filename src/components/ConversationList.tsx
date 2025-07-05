@@ -29,7 +29,6 @@ export default function ConversationList({
   onDeleteConversation
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<ConversationMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Load conversations when the sidebar is opened
   useEffect(() => {
@@ -38,20 +37,16 @@ export default function ConversationList({
     } else {
       // Reset state when modal closes
       setConversations([]);
-      setLoading(true);
     }
   }, [isOpen]);
 
   const loadConversations = async () => {
-    setLoading(true);
     try {
       const response = await fetch('/api/conversations');
       const data = await response.json();
       setConversations(data.conversations || []);
     } catch (error) {
       // Silent error handling for privacy
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,12 +66,12 @@ export default function ConversationList({
   };
 
   return (
-    <ItemListBrowser
+    <ItemListBrowser<ConversationMetadata>
       isOpen={isOpen}
       onClose={onClose}
       items={conversations}
       currentItemId={currentConversationId}
-      onItemSelect={onConversationSelect}
+      onItemSelect={c => onConversationSelect(c.id)}
       onNewItem={onNewConversation}
       onDeleteItem={handleDelete}
       renderItemTitle={c => c.title}
@@ -89,10 +84,6 @@ export default function ConversationList({
       }}
       getItemId={c => c.id}
       newItemLabel={'+ New Conversation'}
-      emptyIcon={'💬'}
-      emptyTitle={'No conversations yet'}
-      emptyDescription={'Start your first conversation to begin your exploration!'}
-      loading={loading}
       closeOnNewItem={true}
     />
   );

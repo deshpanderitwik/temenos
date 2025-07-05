@@ -42,9 +42,6 @@ export default function SessionLayout() {
   });
   const [selectedModel, setSelectedModel] = useState('r1-1776');
   
-  // Save feedback state
-  const [showSaveFeedback, setShowSaveFeedback] = useState(false);
-  
   // Breathwork timer state
   const [breathworkIsFullScreen, setBreathworkIsFullScreen] = useState(false);
   const breathworkTimerRef = useRef<BreathworkTimerRef | null>(null);
@@ -58,8 +55,11 @@ export default function SessionLayout() {
 
   // DRAFT/MAIN toggle state
   const [isDraftMode, setIsDraftMode] = useState(false);
+  
+  // UI visibility state for cmd + . shortcut
+  const [isUIVisible, setIsUIVisible] = useState(true);
 
-  // Keyboard shortcut handler for cmd + j to toggle draft/main mode
+  // Keyboard shortcut handler for cmd + j to toggle draft/main mode and cmd + . to hide/show UI
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       // Cmd+J (Mac) or Ctrl+J (Windows/Linux) to toggle draft/main mode
@@ -70,6 +70,12 @@ export default function SessionLayout() {
         if (narrativePanelRef.current) {
           await narrativePanelRef.current.handleModeSwitch();
         }
+      }
+      
+      // Cmd+. (Mac) or Ctrl+. (Windows/Linux) to hide/show UI
+      if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+        e.preventDefault();
+        setIsUIVisible(prev => !prev);
       }
     };
 
@@ -429,73 +435,78 @@ export default function SessionLayout() {
       
       <div className="h-screen bg-[#141414] flex">
         {/* Draft/Main Toggle Switch - fixed at top left, 48px from edge */}
-        <div className="fixed top-0 left-0 pt-7 z-[100]" style={{ paddingLeft: '24px' }}>
-          <div className="w-16 flex items-center justify-center">
-            <button
-              className={`w-10 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${isDraftMode ? 'bg-yellow-600' : 'bg-white/10'}`}
-              onClick={async () => {
-                // Use the simplified mode switch function
-                if (narrativePanelRef.current) {
-                  await narrativePanelRef.current.handleModeSwitch();
-                }
-              }}
-              title={isDraftMode ? 'Switch to Main Narrative (⌘+J)' : 'Switch to Draft (⌘+J)'}
-            >
-              <span
-                className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${isDraftMode ? 'translate-x-4' : 'translate-x-0'}`}
-              />
-            </button>
-          </div>
-        </div>
-        {/* Left Sidebar */}
-        <div className="w-16 flex flex-col items-center justify-center flex-shrink-0 pl-12 z-50 relative">
-          {/* Navigation Buttons Container */}
-          <div className="bg-white/10 rounded-lg p-2 space-y-2">
-            <button
-              onClick={handleNewNarrative}
-              className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
-              title="New Narrative"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </button>
-            
-            <BreathworkTimer 
-              ref={breathworkTimerRef}
-              renderButton={() => (
-                <button
-                  onClick={handleBreathworkToggle}
-                  className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
-                  title={breathworkIsFullScreen ? 'Exit full-screen breathwork' : 'Start full-screen breathwork timer'}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                  </svg>
-                </button>
-              )}
-            />
-            
-            <button
-              onClick={() => setIsNarrativesOpen(true)}
-              className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
-              title="Narratives"
-            >
-              <svg 
-                className={`w-5 h-5 transition-colors duration-300 ${showSaveFeedback ? 'text-green-400' : 'text-white/40 group-hover:text-white/95'}`} 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
-                stroke="currentColor"
+        {isUIVisible && (
+          <div className="fixed top-0 left-0 pt-7 z-[100]" style={{ paddingLeft: '24px' }}>
+            <div className="w-16 flex items-center justify-center">
+              <button
+                className={`w-10 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${isDraftMode ? 'bg-yellow-600' : 'bg-white/10'}`}
+                onClick={async () => {
+                  // Use the simplified mode switch function
+                  if (narrativePanelRef.current) {
+                    await narrativePanelRef.current.handleModeSwitch();
+                  }
+                }}
+                title={isDraftMode ? 'Switch to Main Narrative (⌘+J)' : 'Switch to Draft (⌘+J)'}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-              </svg>
-            </button>
-            
-
+                <span
+                  className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${isDraftMode ? 'translate-x-4' : 'translate-x-0'}`}
+                />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {/* Left Sidebar */}
+        {isUIVisible && (
+          <div className="w-16 flex flex-col items-center justify-center flex-shrink-0 pl-12 z-50 relative">
+            {/* Navigation Buttons Container */}
+            <div className="bg-white/10 rounded-lg p-2 space-y-2">
+              <button
+                onClick={handleNewNarrative}
+                className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                title="New Narrative"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={() => setIsNarrativesOpen(true)}
+                className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                title="Narratives"
+              >
+                <svg 
+                  className="w-5 h-5 transition-colors duration-300 text-white/40 group-hover:text-white/95" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth="1.5" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+              </button>
+              
+              <BreathworkTimer 
+                ref={breathworkTimerRef}
+                renderButton={() => (
+                  <button
+                    onClick={handleBreathworkToggle}
+                    className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                    title={breathworkIsFullScreen ? 'Exit full-screen breathwork' : 'Start full-screen breathwork timer'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                    </svg>
+                  </button>
+                )}
+              />
+              
+
+            </div>
+          </div>
+        )}
 
         {/* Main Content with Resizable Panels */}
         <div 
@@ -506,17 +517,11 @@ export default function SessionLayout() {
           {/* Narrative Panel */}
           <div 
             className="bg-[#141414] resizable-panel"
-            style={{ width: `${narrativeWidth}%` }}
+            style={{ width: isUIVisible ? `${narrativeWidth}%` : '100%' }}
           >
             <NarrativePanel 
               currentNarrative={currentNarrative}
               onNarrativeUpdate={handleNarrativeUpdate}
-              onSave={() => {
-                setShowSaveFeedback(true);
-                setTimeout(() => {
-                  setShowSaveFeedback(false);
-                }, 1000);
-              }}
               ref={narrativePanelRef}
               isDraftMode={isDraftMode}
               setIsDraftMode={setIsDraftMode}
@@ -525,8 +530,15 @@ export default function SessionLayout() {
 
           {/* Chat Panel with floating appearance and left-edge resize handle */}
           <div 
-            className="resizable-panel chat-panel rounded-2xl shadow-2xl bg-[#141414]/95 border border-white/10 backdrop-blur-lg mr-4 flex flex-col relative"
-            style={{ width: `${chatWidth}%`, minWidth: '320px', maxWidth: '600px', marginTop: 'calc(2rem - 3px)', marginBottom: '2rem' }}
+            className={`resizable-panel chat-panel rounded-2xl bg-[#141414]/95 border border-white/10 backdrop-blur-lg mr-4 flex flex-col relative transition-opacity duration-200 ${!isUIVisible ? 'opacity-0 pointer-events-none' : ''}`}
+            style={{ 
+              width: isUIVisible ? `${chatWidth}%` : '0%', 
+              minWidth: isUIVisible ? '320px' : '0px', 
+              maxWidth: isUIVisible ? '600px' : '0px', 
+              marginTop: 'calc(2rem - 3px)', 
+              marginBottom: '2rem',
+              overflow: isUIVisible ? 'visible' : 'hidden'
+            }}
           >
             {/* Left-edge resize handle */}
             <div
@@ -535,47 +547,53 @@ export default function SessionLayout() {
               onMouseDown={handleMouseDown}
               title="Resize chat panel"
             />
-            <ChatPanel 
-              currentConversation={currentConversation}
-              onConversationUpdate={handleConversationUpdate}
-              onAddToNarrative={handleAddToNarrative}
-              systemPrompt={systemPrompt.body}
-              onSystemPromptChange={body => setSystemPrompt(sp => ({ ...sp, body }))}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              onOpenSystemPrompts={() => setSystemPromptsOpen(true)}
-              systemPromptTitle={systemPrompt.title}
-              onOpenConversations={() => setIsSidebarOpen(true)}
-            />
+                          <ChatPanel 
+                currentConversation={currentConversation}
+                onConversationUpdate={handleConversationUpdate}
+                onAddToNarrative={handleAddToNarrative}
+                systemPrompt={systemPrompt.body}
+                onSystemPromptChange={body => setSystemPrompt(sp => ({ ...sp, body }))}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                onOpenSystemPrompts={() => setSystemPromptsOpen(true)}
+                systemPromptTitle={systemPrompt.title}
+                onOpenConversations={() => setIsSidebarOpen(true)}
+              />
           </div>
         </div>
 
         {/* Conversations List Overlay */}
-        <ConversationList
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          currentConversationId={currentConversation?.id || null}
-          onConversationSelect={handleConversationSelect}
-          onNewConversation={handleNewConversation}
-          onDeleteConversation={handleDeleteConversation}
-        />
+        {isUIVisible && (
+          <ConversationList
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            currentConversationId={currentConversation?.id || null}
+            onConversationSelect={handleConversationSelect}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={handleDeleteConversation}
+          />
+        )}
 
         {/* Narratives List Overlay */}
-        <NarrativesList
-          isOpen={isNarrativesOpen}
-          onClose={() => setIsNarrativesOpen(false)}
-          currentNarrativeId={currentNarrative?.id || null}
-          onNarrativeSelect={handleNarrativeSelect}
-          onNewNarrative={handleNewNarrative}
-          onDeleteNarrative={handleDeleteNarrative}
-        />
+        {isUIVisible && (
+          <NarrativesList
+            isOpen={isNarrativesOpen}
+            onClose={() => setIsNarrativesOpen(false)}
+            currentNarrativeId={currentNarrative?.id || null}
+            onNarrativeSelect={handleNarrativeSelect}
+            onNewNarrative={handleNewNarrative}
+            onDeleteNarrative={handleDeleteNarrative}
+          />
+        )}
 
-        <SystemPromptsModal
-          isOpen={systemPromptsOpen}
-          onClose={() => setSystemPromptsOpen(false)}
-          activePrompt={systemPrompt}
-          setActivePrompt={setSystemPrompt}
-        />
+        {isUIVisible && (
+          <SystemPromptsModal
+            isOpen={systemPromptsOpen}
+            onClose={() => setSystemPromptsOpen(false)}
+            activePrompt={systemPrompt}
+            setActivePrompt={setSystemPrompt}
+          />
+        )}
       </div>
     </>
   );

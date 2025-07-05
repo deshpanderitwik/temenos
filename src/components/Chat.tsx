@@ -344,8 +344,8 @@ export default function Chat() {
           isOpen={systemPromptsOpen}
           onClose={() => setSystemPromptsOpen(false)}
           currentPromptId={currentPromptId}
-          onPromptSelect={id => {
-            setCurrentPromptId(id);
+          onPromptSelect={prompt => {
+            setCurrentPromptId(prompt.id);
             // Optionally, fetch and set the prompt body as systemPrompt
             // For now, just close the modal
             setSystemPromptsOpen(false);

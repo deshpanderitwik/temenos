@@ -49,6 +49,7 @@ export default function SystemPromptsModal({ isOpen, onClose, activePrompt, setA
               onNewPrompt={() => setMode('form')}
               onDeletePrompt={() => setRefreshKey(k => k + 1)}
               onEditPrompt={(prompt, viewOnlyFlag) => { setEditingPrompt(prompt); setMode('form'); setViewOnly(!!viewOnlyFlag); }}
+              isInsideModal={true}
               key={refreshKey}
             />
           ) : (

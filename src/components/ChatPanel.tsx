@@ -119,6 +119,9 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
   const isScrollingToBottomRef = useRef(false);
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
+
+
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -216,6 +219,8 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
       resizeObserver.disconnect();
     };
   }, []);
+
+
 
   // Load conversation when currentConversation changes
   useEffect(() => {
@@ -558,7 +563,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
       <div
         key={message.id}
         ref={isLastMessage ? lastMessageRef : null}
-        className="mb-4 chat-message"
+        className={`chat-message ${isLastMessage ? '' : 'mb-4'}`}
       >
         {/* Message Header */}
         <div className="flex items-center justify-between mb-2 chat-message-header pl-4 pr-4">
@@ -624,7 +629,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
         <div className="flex-1 overflow-hidden min-h-0 relative">
           <div 
             ref={messagesContainerRef}
-            className="absolute inset-0 overflow-y-auto p-4 space-y-4 messages-container"
+            className="absolute inset-0 overflow-y-auto pt-4 pr-4 pl-4 pb-0 space-y-4 messages-container"
             onKeyDown={(e) => {
               // Cmd+K (Mac) or Ctrl+K (Windows/Linux) to add selected text to narrative
               if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -673,7 +678,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
             )}
             
             {isLoading && (
-              <div className="mb-4 chat-message">
+              <div className="chat-message">
                 {/* Loading Header */}
                 <div className="flex items-center justify-between mb-2 chat-message-header pl-4 pr-4">
                   <div className="text-sm font-medium text-gray-300">
@@ -771,11 +776,11 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   className={`w-8 h-8 text-xs rounded-full transition-colors flex items-center justify-center ${
                     !inputValue.trim() || isLoading 
                       ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                      : 'bg-white/20 text-white/95 hover:text-white/95 hover:bg-white/30'
+                      : 'bg-white/10 text-white/60 hover:text-white hover:bg-white/20'
                   }`}
                   title="Send message"
                 >
-                  <svg className="w-3 h-3 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                   </svg>
                 </button>
@@ -786,4 +791,4 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
       </div>
     </>
   );
-} 
+}

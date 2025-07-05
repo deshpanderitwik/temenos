@@ -1,5 +1,19 @@
 'use client';
 
+/**
+ * Narrative Editor Component
+ * 
+ * Keyboard Shortcuts:
+ * - Cmd+Z (Mac) / Ctrl+Z (Windows/Linux): Undo
+ * - Cmd+Shift+Z (Mac) / Ctrl+Y (Windows/Linux): Redo
+ * - Cmd+S (Mac) / Ctrl+S (Windows/Linux): Save
+ * - Cmd+Enter (Mac) / Ctrl+Enter (Windows/Linux): Add new paragraph
+ * - Cmd+J (Mac) / Ctrl+J (Windows/Linux): Toggle draft/main mode (global)
+ * - Cmd+B: Bold text
+ * - Cmd+I: Italic text
+ * - Cmd+1/2/3: Heading levels 1/2/3
+ */
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -7,6 +21,10 @@ import CharacterCount from '@tiptap/extension-character-count';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
+import History from '@tiptap/extension-history';
+import Bold from '@tiptap/extension-bold';
+import Italic from '@tiptap/extension-italic';
+import Heading from '@tiptap/extension-heading';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 
 interface Narrative {
@@ -61,7 +79,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
   
   // Essential refs only
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const titleSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Simplified scroll handling for title opacity
@@ -85,15 +102,17 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         placeholder: 'Begin writing your narrative here... Share your thoughts, insights, and the story that emerges from your exploration.',
       }),
       CharacterCount,
+      History.configure({
+        depth: 100, // Keep more history entries
+      }),
+      Bold,
+      Italic,
+      Heading.configure({
+        levels: [1, 2, 3],
+      }),
     ],
     content: '<p>Start your story here...</p>',
     immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none',
-        style: 'height: 100%; overflow: visible;',
-      },
-    },
     onUpdate: ({ editor }) => {
       const content = editor.getHTML();
       
@@ -115,6 +134,32 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       saveTimeoutRef.current = setTimeout(() => {
         handleAutoSave(content);
       }, 500);
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-invert max-w-none focus:outline-none',
+        style: 'height: 100%; overflow: visible;',
+      },
+      handleKeyDown: (view, event) => {
+        // Custom keyboard shortcuts for the narrative editor
+        const { state, dispatch } = view;
+        
+        // Cmd+S (Mac) or Ctrl+S (Windows/Linux) to save
+        if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+          event.preventDefault();
+          saveCurrentContent();
+          return true;
+        }
+        
+        // Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to add new paragraph
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+          event.preventDefault();
+          editor?.commands.enter();
+          return true;
+        }
+        
+        return false;
+      },
     },
   });
 
@@ -302,9 +347,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      if (titleSaveTimeoutRef.current) {
-        clearTimeout(titleSaveTimeoutRef.current);
-      }
     };
   }, []);
 
@@ -336,7 +378,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       });
       
       if (editor) {
-        editor.commands.setContent('<p></p>');
+        editor.commands.setContent('<p></p>', false);
       }
     }
   }, [currentNarrative, editor]);
@@ -353,7 +395,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       // This prevents losing user input when auto-save triggers a re-render
       const currentEditorContent = editor.getHTML();
       if (currentEditorContent !== contentToLoad) {
-        editor.commands.setContent(contentToLoad);
+        editor.commands.setContent(contentToLoad, false);
       }
     }
   }, [currentNarrative, editor, isDraftMode]);
@@ -365,33 +407,33 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     // Check if the text contains multiple paragraphs (has double newlines)
     const hasMultipleParagraphs = text.includes('\n\n') || text.split('\n').filter(line => line.trim().length > 0).length > 1;
     
-    let formattedText;
     if (hasMultipleParagraphs) {
-      // If multiple paragraphs, wrap each non-empty line in <p> tags
-      formattedText = text
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-        .map(line => `<p>${line}</p>`)
-        .join('');
+      // If multiple paragraphs, insert each line as a new paragraph
+      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      lines.forEach((line, index) => {
+        if (index === 0) {
+          // Replace current content with first line
+          editor.commands.setContent(`<p>${line}</p>`, false);
+        } else {
+          // Add subsequent lines as new paragraphs
+          editor.commands.enter();
+          editor.commands.insertContent(line);
+        }
+      });
     } else {
-      // If single paragraph, just add the text without wrapping in <p> tags
-      formattedText = text.trim();
+      // If single paragraph, just insert the text at cursor position
+      editor.commands.insertContent(text.trim());
     }
     
     // Update state based on current mode
     setNarrativeState(prev => ({
       ...prev,
       ...(isDraftMode 
-        ? { draftContent: prev.draftContent.replace(/<\/p>$/, formattedText) }
-        : { mainContent: prev.mainContent.replace(/<\/p>$/, formattedText) }
+        ? { draftContent: editor.getHTML() }
+        : { mainContent: editor.getHTML() }
       ),
       hasUnsavedChanges: true
     }));
-    
-    // Update editor content
-    const currentContent = editor.getHTML();
-    const newContent = currentContent.replace(/<\/p>$/, formattedText);
-    editor.commands.setContent(newContent);
   }, [isDraftMode, editor]);
 
   // Implemented save function
@@ -402,12 +444,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
   const handleModeSwitch = useCallback(async () => {
     if (!editor) return;
-    
-    console.log('Mode switch - before save:', {
-      currentTitle: narrativeState.title,
-      isDraftMode,
-      hasUnsavedChanges: narrativeState.hasUnsavedChanges
-    });
     
     // Save current content before switching (title is preserved in narrativeState)
     const currentContent = editor.getHTML();
@@ -422,7 +458,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       ? narrativeState.draftContent || '<p></p>'
       : narrativeState.mainContent || '<p></p>';
     
-    editor.commands.setContent(contentToLoad);
+    // Use setContent with preserveWhitespace to maintain history better
+    editor.commands.setContent(contentToLoad, false);
   }, [editor, isDraftMode, narrativeState, saveNarrative, setIsDraftMode]);
 
   // Expose functions to parent component via ref
@@ -453,50 +490,14 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                   hasUnsavedChanges: true
                 }));
                 
-                // Clear any existing timeout
-                if (titleSaveTimeoutRef.current) {
-                  clearTimeout(titleSaveTimeoutRef.current);
+                // Use the same auto-save mechanism as the main editor
+                if (saveTimeoutRef.current) {
+                  clearTimeout(saveTimeoutRef.current);
                 }
                 
-                // Set a new timeout to save the title after a delay
-                titleSaveTimeoutRef.current = setTimeout(async () => {
-                  if (newTitle && newTitle !== 'New Narrative' && newTitle !== currentNarrative?.title) {
-                    try {
-                      const response = await fetch('/api/narratives', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          id: narrativeState.id,
-                          title: newTitle,
-                          content: narrativeState.mainContent,
-                          draftContent: narrativeState.draftContent,
-                        }),
-                      });
-                      
-                      if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.narrative) {
-                          // Only update parent state if the narrative ID is different or if we don't have an ID yet
-                          // This prevents unnecessary re-renders that could cause content loss
-                          if (!narrativeState.id || data.narrative.id !== narrativeState.id) {
-                            onNarrativeUpdate(data.narrative);
-                          }
-                          setNarrativeState(prev => ({
-                            ...prev,
-                            lastSaved: new Date(),
-                            hasUnsavedChanges: false
-                          }));
-                          // Trigger save feedback for green button effect
-                          onSave?.();
-                        }
-                      }
-                    } catch (error) {
-                      // Silent error handling for privacy
-                    }
-                  }
-                }, 1000); // Save after 1 second of no typing
+                saveTimeoutRef.current = setTimeout(() => {
+                  handleAutoSave(editor?.getHTML() || '');
+                }, 500);
               }}
               onBlur={async e => {
                 const trimmedTitle = e.target.value.trim();
@@ -510,48 +511,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 const scrollTop = scrollContainer?.scrollTop || 0;
                 setTitleOpacity(scrollTop > 0 ? 0.4 : 0.95);
                 
-                // Clear any pending timeout
-                if (titleSaveTimeoutRef.current) {
-                  clearTimeout(titleSaveTimeoutRef.current);
+                // Clear any pending timeout and save immediately
+                if (saveTimeoutRef.current) {
+                  clearTimeout(saveTimeoutRef.current);
                 }
                 
-                // Save immediately when title is changed
-                if (trimmedTitle && trimmedTitle !== 'New Narrative' && trimmedTitle !== currentNarrative?.title) {
-                  try {
-                    const response = await fetch('/api/narratives', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        id: narrativeState.id,
-                        title: trimmedTitle,
-                        content: narrativeState.mainContent,
-                        draftContent: narrativeState.draftContent,
-                      }),
-                    });
-                    
-                    if (response.ok) {
-                      const data = await response.json();
-                      if (data.success && data.narrative) {
-                        // Only update parent state if the narrative ID is different or if we don't have an ID yet
-                        // This prevents unnecessary re-renders that could cause content loss
-                        if (!narrativeState.id || data.narrative.id !== narrativeState.id) {
-                          onNarrativeUpdate(data.narrative);
-                        }
-                        setNarrativeState(prev => ({
-                          ...prev,
-                          lastSaved: new Date(),
-                          hasUnsavedChanges: false
-                        }));
-                        // Trigger save feedback for green button effect
-                        onSave?.();
-                      }
-                    }
-                  } catch (error) {
-                    // Silent error handling for privacy
-                  }
-                }
+                // Save immediately when title loses focus
+                await handleAutoSave(editor?.getHTML() || '');
               }}
               onMouseEnter={() => {
                 if (titleOpacity < 1) {
@@ -584,7 +550,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         <div className="flex-1 overflow-hidden min-h-0 relative">
           <div 
             ref={scrollContainerRef}
-            className="absolute inset-0 overflow-y-auto"
+            className="absolute inset-0 overflow-y-auto scrollbar-hide"
           >
             <EditorContent 
               editor={editor} 

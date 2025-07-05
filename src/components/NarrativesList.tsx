@@ -29,7 +29,6 @@ export default function NarrativesList({
   onDeleteNarrative,
 }: NarrativesListProps) {
   const [narratives, setNarratives] = useState<Narrative[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Load narratives when the sidebar is opened
   useEffect(() => {
@@ -38,12 +37,10 @@ export default function NarrativesList({
     } else {
       // Reset state when modal closes
       setNarratives([]);
-      setLoading(true);
     }
   }, [isOpen]);
 
   const loadNarratives = async () => {
-    setLoading(true);
     try {
       const response = await fetch('/api/narratives');
       const data = await response.json();
@@ -53,8 +50,6 @@ export default function NarrativesList({
       }
     } catch (error) {
       // Silent error handling for privacy
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -93,12 +88,12 @@ export default function NarrativesList({
   };
 
   return (
-    <ItemListBrowser
+    <ItemListBrowser<Narrative>
       isOpen={isOpen}
       onClose={onClose}
       items={narratives}
       currentItemId={currentNarrativeId}
-      onItemSelect={onNarrativeSelect}
+      onItemSelect={n => onNarrativeSelect(n.id)}
       onNewItem={onNewNarrative}
       onDeleteItem={handleDelete}
       renderItemTitle={n => n.title}
@@ -111,10 +106,6 @@ export default function NarrativesList({
       }}
       getItemId={n => n.id}
       newItemLabel={'+ New Narrative'}
-      emptyIcon={'📝'}
-      emptyTitle={'No narratives yet'}
-      emptyDescription={'Start your first narrative to begin your story!'}
-      loading={loading}
       closeOnNewItem={true}
     />
   );
