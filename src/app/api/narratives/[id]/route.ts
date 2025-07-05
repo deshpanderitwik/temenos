@@ -48,7 +48,6 @@ export async function GET(
       throw error;
     }
   } catch (error) {
-    console.error('Error loading narrative');
     return NextResponse.json({ error: 'Failed to load narrative' }, { status: 500 });
   }
 }
@@ -72,7 +71,6 @@ export async function DELETE(
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting narrative');
     return NextResponse.json({ error: 'Failed to delete narrative' }, { status: 500 });
   }
 } 

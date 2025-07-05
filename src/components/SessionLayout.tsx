@@ -5,8 +5,9 @@ import NarrativePanel, { NarrativePanelRef } from './NarrativePanel';
 import ChatPanel from './ChatPanel';
 import ConversationList from './ConversationList';
 import NarrativesList from './NarrativesList';
-import SystemPromptModal from './SystemPromptModal';
 import BreathworkTimer, { BreathworkTimerRef } from './BreathworkTimer';
+import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
+import SystemPromptsModal from './SystemPromptsModal';
 
 interface Conversation {
   id: string;
@@ -35,8 +36,10 @@ export default function SessionLayout() {
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(25);
-  const [isSystemPromptModalOpen, setIsSystemPromptModalOpen] = useState(false);
-  const [systemPrompt, setSystemPrompt] = useState<string>('You are a wise, compassionate therapeutic assistant trained in Jungian depth psychology...');
+  const [systemPrompt, setSystemPrompt] = useState<{ title: string; body: string }>({
+    title: 'Temenos Guide',
+    body: DEFAULT_SYSTEM_PROMPT,
+  });
   const [selectedModel, setSelectedModel] = useState('r1-1776');
   
   // Save feedback state
@@ -62,8 +65,6 @@ export default function SessionLayout() {
       // Cmd+J (Mac) or Ctrl+J (Windows/Linux) to toggle draft/main mode
       if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
         e.preventDefault();
-        
-        console.log('Cmd+J pressed - current isDraftMode:', isDraftMode);
         
         // Use the simplified mode switch function
         if (narrativePanelRef.current) {
@@ -91,7 +92,7 @@ export default function SessionLayout() {
         }
       }
     } catch (error) {
-      console.error('Failed to load latest conversation:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -108,7 +109,7 @@ export default function SessionLayout() {
         }
       }
     } catch (error) {
-      console.error('Failed to load latest narrative:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -193,7 +194,7 @@ export default function SessionLayout() {
         }
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -220,10 +221,10 @@ export default function SessionLayout() {
       });
 
       if (!response.ok) {
-        console.error('Failed to save conversation');
+        // Silent error handling for privacy
       }
     } catch (error) {
-      console.error('Error saving conversation:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -237,7 +238,7 @@ export default function SessionLayout() {
         }
       }
     } catch (error) {
-      console.error('Failed to load narrative:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -387,6 +388,8 @@ export default function SessionLayout() {
     };
   }, []);
 
+  const [systemPromptsOpen, setSystemPromptsOpen] = useState(false);
+
   return (
     <>
       {/* Full-screen Breathwork Timer Overlay */}
@@ -448,16 +451,26 @@ export default function SessionLayout() {
         <div className="w-16 flex flex-col items-center justify-center flex-shrink-0 pl-12 z-50 relative">
           {/* Navigation Buttons Container */}
           <div className="bg-white/10 rounded-lg p-2 space-y-2">
+            <button
+              onClick={handleNewNarrative}
+              className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+              title="New Narrative"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+            
             <BreathworkTimer 
               ref={breathworkTimerRef}
               renderButton={() => (
                 <button
                   onClick={handleBreathworkToggle}
-                  className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white group"
+                  className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
                   title={breathworkIsFullScreen ? 'Exit full-screen breathwork' : 'Start full-screen breathwork timer'}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                   </svg>
                 </button>
               )}
@@ -465,28 +478,22 @@ export default function SessionLayout() {
             
             <button
               onClick={() => setIsNarrativesOpen(true)}
-              className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white group"
+              className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
               title="Narratives"
             >
               <svg 
-                className={`w-5 h-5 transition-colors duration-300 ${showSaveFeedback ? 'text-green-400' : 'text-white'}`} 
+                className={`w-5 h-5 transition-colors duration-300 ${showSaveFeedback ? 'text-green-400' : 'text-white/40 group-hover:text-white/95'}`} 
+                xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
+                viewBox="0 0 24 24" 
+                strokeWidth="1.5" 
+                stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
               </svg>
             </button>
             
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white group"
-              title="Conversations"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </button>
+
           </div>
         </div>
 
@@ -518,8 +525,8 @@ export default function SessionLayout() {
 
           {/* Chat Panel with floating appearance and left-edge resize handle */}
           <div 
-            className="resizable-panel chat-panel rounded-2xl shadow-2xl bg-[#141414]/95 border border-white/10 backdrop-blur-lg my-8 mr-4 flex flex-col relative"
-            style={{ width: `${chatWidth}%`, minWidth: '320px', maxWidth: '600px' }}
+            className="resizable-panel chat-panel rounded-2xl shadow-2xl bg-[#141414]/95 border border-white/10 backdrop-blur-lg mr-4 flex flex-col relative"
+            style={{ width: `${chatWidth}%`, minWidth: '320px', maxWidth: '600px', marginTop: 'calc(2rem - 3px)', marginBottom: '2rem' }}
           >
             {/* Left-edge resize handle */}
             <div
@@ -532,11 +539,13 @@ export default function SessionLayout() {
               currentConversation={currentConversation}
               onConversationUpdate={handleConversationUpdate}
               onAddToNarrative={handleAddToNarrative}
-              systemPrompt={systemPrompt}
-              onSystemPromptChange={setSystemPrompt}
-              onOpenSystemPromptModal={() => setIsSystemPromptModalOpen(true)}
+              systemPrompt={systemPrompt.body}
+              onSystemPromptChange={body => setSystemPrompt(sp => ({ ...sp, body }))}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
+              onOpenSystemPrompts={() => setSystemPromptsOpen(true)}
+              systemPromptTitle={systemPrompt.title}
+              onOpenConversations={() => setIsSidebarOpen(true)}
             />
           </div>
         </div>
@@ -561,11 +570,11 @@ export default function SessionLayout() {
           onDeleteNarrative={handleDeleteNarrative}
         />
 
-        <SystemPromptModal
-          isOpen={isSystemPromptModalOpen}
-          onClose={() => setIsSystemPromptModalOpen(false)}
-          currentPrompt={systemPrompt}
-          onSave={(prompt) => setSystemPrompt(prompt)}
+        <SystemPromptsModal
+          isOpen={systemPromptsOpen}
+          onClose={() => setSystemPromptsOpen(false)}
+          activePrompt={systemPrompt}
+          setActivePrompt={setSystemPrompt}
         />
       </div>
     </>

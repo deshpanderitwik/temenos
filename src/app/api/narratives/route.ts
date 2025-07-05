@@ -59,7 +59,7 @@ export async function GET() {
             characterCount: narrative.characterCount
           };
         } catch (error) {
-          console.error(`Error reading narrative file ${filename}`);
+          // Silent error handling for privacy
           return null;
         }
       })
@@ -71,7 +71,6 @@ export async function GET() {
 
     return NextResponse.json({ narratives: validNarratives });
   } catch (error) {
-    console.error('Error listing narratives');
     return NextResponse.json({ error: 'Failed to list narratives' }, { status: 500 });
   }
 }
@@ -145,7 +144,6 @@ export async function POST(request: Request) {
       characterCount: narrative.characterCount
     });
   } catch (error) {
-    console.error('Error saving narrative');
     return NextResponse.json({ error: 'Failed to save narrative' }, { status: 500 });
   }
 } 

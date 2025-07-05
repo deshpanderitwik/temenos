@@ -4,7 +4,9 @@ import { useState, FormEvent, useEffect, useRef } from 'react';
 import { encryptClientSide, decryptClientSide } from '@/utils/encryption';
 import ConversationList from './ConversationList';
 import ThinkingMessage from './ThinkingMessage';
-import SystemPromptModal from './SystemPromptModal';
+import SystemPromptsList from './SystemPromptsList';
+import SystemPromptForm from './SystemPromptForm';
+import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -18,11 +20,14 @@ export default function Chat() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [currentConversation, setCurrentConversation] = useState<any>(null);
   const [showConversations, setShowConversations] = useState(false);
-  const [systemPrompt, setSystemPrompt] = useState('You are a Jungian therapeutic assistant, helping users explore their psyche through the lens of analytical psychology. Respond with depth, empathy, and wisdom.');
-  const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [selectedModel, setSelectedModel] = useState('r1-1776');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [systemPromptsOpen, setSystemPromptsOpen] = useState(false);
+  const [systemPromptFormOpen, setSystemPromptFormOpen] = useState(false);
+  const [currentPromptId, setCurrentPromptId] = useState<string | null>(null);
+  const [refreshPrompts, setRefreshPrompts] = useState(0);
 
   // Available models
   const availableModels = [
@@ -61,7 +66,7 @@ export default function Chat() {
         setConversations(data.conversations);
       }
     } catch (error) {
-      console.error('Failed to load conversations:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -76,7 +81,7 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error);
+      // Silent error handling for privacy
     }
     setShowConversations(false);
   };
@@ -108,10 +113,13 @@ export default function Chat() {
       });
 
       if (!response.ok) {
-        console.error('Failed to save conversation');
+        // Silent error handling for privacy
+      } else {
+        // Refresh the conversations list to include the new/updated conversation
+        await loadConversations();
       }
     } catch (error) {
-      console.error('Error saving conversation:', error);
+      // Silent error handling for privacy
     }
   };
 
@@ -168,7 +176,8 @@ export default function Chat() {
 
       // Add assistant response to chat (unencrypted for display)
       const assistantMessage: Message = { role: 'assistant', content: decryptedResponse };
-      setMessages(prev => [...prev, assistantMessage]);
+      const updatedMessages = [...messages, newUserMessage, assistantMessage];
+      setMessages(updatedMessages);
 
       // Scroll to the assistant message after it's added
       setTimeout(scrollToAssistantMessage, 100);
@@ -179,14 +188,14 @@ export default function Chat() {
         title: currentConversation?.title || generateTitle([newUserMessage, assistantMessage]),
         created: currentConversation?.created || new Date().toISOString(),
         lastModified: new Date().toISOString(),
-        messages: [...messages, newUserMessage, assistantMessage]
+        messages: updatedMessages
       };
 
       setCurrentConversation(updatedConversation);
       await handleConversationUpdate(updatedConversation);
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      // Silent error handling for privacy
       // Add error message to chat
       const errorMessage: Message = { 
         role: 'assistant', 
@@ -314,13 +323,13 @@ export default function Chat() {
             
             <button
               type="button"
-              onClick={() => setShowSystemPromptModal(true)}
+              onClick={() => setSystemPromptsOpen(true)}
               className="w-10 h-10 bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors flex items-center justify-center"
-              title="System Prompt"
+              title="System Prompts"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              {/* SVG: silhouettes of people */}
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-4a4 4 0 11-8 0 4 4 0 018 0zm6 8v-2a4 4 0 00-3-3.87M6 16v-2a4 4 0 013-3.87" />
               </svg>
             </button>
           </form>
@@ -331,15 +340,33 @@ export default function Chat() {
             </div>
           )}
         </div>
+        <SystemPromptsList
+          isOpen={systemPromptsOpen}
+          onClose={() => setSystemPromptsOpen(false)}
+          currentPromptId={currentPromptId}
+          onPromptSelect={id => {
+            setCurrentPromptId(id);
+            // Optionally, fetch and set the prompt body as systemPrompt
+            // For now, just close the modal
+            setSystemPromptsOpen(false);
+          }}
+          onNewPrompt={() => {
+            setSystemPromptsOpen(false);
+            setTimeout(() => setSystemPromptFormOpen(true), 200);
+          }}
+          onDeletePrompt={() => setRefreshPrompts(r => r + 1)}
+          key={refreshPrompts}
+        />
+        <SystemPromptForm
+          isOpen={systemPromptFormOpen}
+          onClose={() => setSystemPromptFormOpen(false)}
+          onCreated={prompt => {
+            setSystemPrompt(prompt.body);
+            setSystemPromptFormOpen(false);
+            setRefreshPrompts(r => r + 1);
+          }}
+        />
       </div>
-
-      {/* System Prompt Modal */}
-      <SystemPromptModal
-        isOpen={showSystemPromptModal}
-        onClose={() => setShowSystemPromptModal(false)}
-        currentPrompt={systemPrompt}
-        onSave={setSystemPrompt}
-      />
     </div>
   );
 } 

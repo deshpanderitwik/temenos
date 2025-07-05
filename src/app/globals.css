@@ -189,16 +189,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #374151;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #6b7280;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Ensure text selection works properly in chat messages */
@@ -300,6 +300,10 @@ summary {
 .chat-message p {
   margin-bottom: 0.75rem;
   margin-top: 0.75rem;
+}
+
+.chat-message li p {
+  margin-top: 0;
 }
 
 .chat-message ul, .chat-message ol {
@@ -535,7 +539,20 @@ summary {
 }
 
 .narrative-editor::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Edge */
+  width: 8px;
+}
+
+.narrative-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.narrative-editor::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.narrative-editor::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .narrative-editor .ProseMirror {
@@ -555,6 +572,7 @@ summary {
   word-wrap: break-word;
   overflow-wrap: break-word;
   font-feature-settings: "liga" 1, "kern" 1;
+  white-space: pre-wrap;
 }
 
 .narrative-editor .ProseMirror h1,
@@ -860,6 +878,224 @@ summary {
   white-space: normal !important;
 }
 
+/* Table styling for chat messages */
+.chat-message-content .prose table,
+.chat-message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75rem 0;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  font-size: 0.875rem;
+  max-width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chat-message-content .prose thead,
+.chat-message-content thead {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.chat-message-content .prose th,
+.chat-message-content th {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 0.5rem;
+  text-align: left;
+  font-weight: 600;
+  color: #f9fafb;
+  background-color: rgba(255, 255, 255, 0.05);
+  font-size: 0.875rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  max-width: 0;
+  min-width: 0;
+}
+
+.chat-message-content .prose td,
+.chat-message-content td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.5rem;
+  text-align: left;
+  color: #e5e7eb;
+  font-size: 0.875rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  max-width: 0;
+  min-width: 0;
+}
+
+.chat-message-content .prose tr:nth-child(even),
+.chat-message-content tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.chat-message-content .prose tr:hover,
+.chat-message-content tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Responsive table handling for very narrow chat panes */
+@media (max-width: 480px) {
+  .chat-message-content .prose table,
+  .chat-message-content table {
+    font-size: 0.75rem;
+    margin: 0.5rem 0;
+  }
+  
+  .chat-message-content .prose th,
+  .chat-message-content th,
+  .chat-message-content .prose td,
+  .chat-message-content td {
+    padding: 0.375rem 0.25rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Ensure tables don't overflow and text wraps properly */
+.chat-message-content .prose table {
+  overflow: hidden;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.chat-message-content .prose table tbody,
+.chat-message-content .prose table thead,
+.chat-message-content .prose table tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Force text wrapping in table cells */
+.chat-message-content .prose table *,
+.chat-message-content table * {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Table styling for thinking content (smaller) */
+.chat-message-content details .prose table,
+.chat-message-content details table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+  max-width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.chat-message-content details .prose thead,
+.chat-message-content details thead {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.chat-message-content details .prose th,
+.chat-message-content details th {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.375rem 0.375rem;
+  text-align: left;
+  font-weight: 600;
+  color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.03);
+  font-size: 0.75rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  max-width: 0;
+  min-width: 0;
+}
+
+.chat-message-content details .prose td,
+.chat-message-content details td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.375rem 0.375rem;
+  text-align: left;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  max-width: 0;
+  min-width: 0;
+}
+
+.chat-message-content details .prose tr:nth-child(even),
+.chat-message-content details tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+.chat-message-content details .prose tr:hover,
+.chat-message-content details tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Responsive table handling for thinking content */
+@media (max-width: 480px) {
+  .chat-message-content details .prose table,
+  .chat-message-content details table {
+    font-size: 0.625rem;
+    margin: 0.375rem 0;
+  }
+  
+  .chat-message-content details .prose th,
+  .chat-message-content details th,
+  .chat-message-content details .prose td,
+  .chat-message-content details td {
+    padding: 0.25rem 0.125rem;
+    font-size: 0.625rem;
+  }
+}
+
+/* Ensure thinking content tables don't overflow and text wraps properly */
+.chat-message-content details .prose table {
+  overflow: hidden;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.chat-message-content details .prose table tbody,
+.chat-message-content details .prose table thead,
+.chat-message-content details .prose table tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Force text wrapping in thinking content table cells */
+.chat-message-content details .prose table *,
+.chat-message-content details table * {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
 /* Floating add to narrative button */
 .add-to-narrative-button {
   pointer-events: none;
@@ -893,7 +1129,7 @@ summary {
 .narrative-editor {
   overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #6b7280 #374151; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent; /* Firefox */
 }
 
 /* Ensure consistent spacing for narrative editor content */
@@ -909,7 +1145,7 @@ summary {
   overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
   overflow-x: hidden;
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #6b7280 #374151; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent; /* Firefox */
   padding-right: 8px; /* Account for scrollbar width */
   box-sizing: border-box;
   user-select: text;
@@ -923,7 +1159,7 @@ summary {
 .overflow-y-auto {
   overflow-y: scroll !important;
   scrollbar-width: thin;
-  scrollbar-color: #6b7280 #374151;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 /* Ensure consistent spacing for all scrollable content */

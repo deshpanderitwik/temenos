@@ -5,16 +5,17 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import SystemPromptModal from './SystemPromptModal';
 import { encryptClientSide, decryptClientSide } from '@/utils/encryption';
 import ThinkingMessage from './ThinkingMessage';
+import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
+import SystemPromptsList from './SystemPromptsList';
 
 // Markdown components for chat messages
 const markdownComponents = {
   h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-100 mb-2 mt-3">{children}</h1>,
   h2: ({children}: any) => <h2 className="text-base font-bold text-gray-100 mb-2 mt-2">{children}</h2>,
   h3: ({children}: any) => <h3 className="text-xl font-bold text-gray-100 mb-1 mt-2">{children}</h3>,
-  p: ({children}: any) => <p className="text-gray-100 mb-2 leading-relaxed">{children}</p>,
+  p: ({children}: any) => <p className="text-gray-100 mb-2 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
   strong: ({children}: any) => <strong className="font-bold text-gray-50">{children}</strong>,
   em: ({children}: any) => <em className="italic text-gray-200">{children}</em>,
   ul: ({children}: any) => (
@@ -49,7 +50,7 @@ const thinkingMarkdownComponents = {
   h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-200 mb-2 mt-3">{children}</h1>,
   h2: ({children}: any) => <h2 className="text-base font-bold text-gray-200 mb-2 mt-2">{children}</h2>,
   h3: ({children}: any) => <h3 className="text-xl font-bold text-gray-200 mb-1 mt-2">{children}</h3>,
-  p: ({children}: any) => <p className="text-gray-300 text-sm mb-2 leading-relaxed">{children}</p>,
+  p: ({children}: any) => <p className="text-gray-300 text-sm mb-2 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
   strong: ({children}: any) => <strong className="font-bold text-gray-200">{children}</strong>,
   em: ({children}: any) => <em className="italic text-gray-300">{children}</em>,
   ul: ({children}: any) => (
@@ -100,25 +101,17 @@ interface ChatPanelProps {
   onAddToNarrative?: (text: string) => void;
   systemPrompt: string;
   onSystemPromptChange: (prompt: string) => void;
-  onOpenSystemPromptModal: () => void;
   selectedModel?: string;
   onModelChange?: (model: string) => void;
+  onOpenSystemPrompts: () => void;
+  systemPromptTitle?: string;
+  onOpenConversations?: () => void;
 }
 
-const DEFAULT_SYSTEM_PROMPT = `You are a helpful AI assistant. You can help with various tasks and conversations.
-
-Please respond in a helpful, informative, and engaging manner.`;
-
-export default function ChatPanel({ currentConversation, onConversationUpdate, onAddToNarrative, systemPrompt, onSystemPromptChange, onOpenSystemPromptModal, selectedModel = 'r1-1776', onModelChange }: ChatPanelProps) {
+export default function ChatPanel({ currentConversation, onConversationUpdate, onAddToNarrative, systemPrompt, onSystemPromptChange, selectedModel = 'r1-1776', onModelChange, onOpenSystemPrompts, systemPromptTitle, onOpenConversations }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Available models
-  const availableModels = [
-    { id: 'r1-1776', name: 'R1-1776', description: 'Fast and efficient' },
-    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' }
-  ];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -491,7 +484,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
       onConversationUpdate(updatedConversation);
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      // Silent error handling for privacy
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -619,155 +612,178 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
     );
   };
 
+  const availableModels = [
+    { id: 'r1-1776', name: 'R1-1776', description: 'Fast and efficient' },
+    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' }
+  ];
+
   return (
-            <div className="h-full flex flex-col bg-[#141414]">
-      {/* Messages - Takes remaining space and scrolls */}
-      <div className="flex-1 overflow-hidden min-h-0 relative">
-        <div 
-          ref={messagesContainerRef}
-          className="absolute inset-0 overflow-y-auto p-4 space-y-4 messages-container"
-          onKeyDown={(e) => {
-            // Cmd+K (Mac) or Ctrl+K (Windows/Linux) to add selected text to narrative
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-              e.preventDefault();
-              
-              const selection = window.getSelection();
-              if (!selection || selection.rangeCount === 0) return;
-              
-              // Get the selected text with preserved paragraph breaks
-              let selectedText = '';
-              
-              if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const fragment = range.cloneContents();
+    <>
+      <div className="h-full flex flex-col bg-[#141414]">
+        {/* Messages - Takes remaining space and scrolls */}
+        <div className="flex-1 overflow-hidden min-h-0 relative">
+          <div 
+            ref={messagesContainerRef}
+            className="absolute inset-0 overflow-y-auto p-4 space-y-4 messages-container"
+            onKeyDown={(e) => {
+              // Cmd+K (Mac) or Ctrl+K (Windows/Linux) to add selected text to narrative
+              if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
                 
-                // Convert the fragment to HTML and then process it
-                const tempDiv = document.createElement('div');
-                tempDiv.appendChild(fragment);
+                const selection = window.getSelection();
+                if (!selection || selection.rangeCount === 0) return;
                 
-                // Get the HTML content
-                const htmlContent = tempDiv.innerHTML;
+                // Get the selected text with preserved paragraph breaks
+                let selectedText = '';
                 
-                // Convert HTML to text while preserving paragraph breaks
-                selectedText = htmlContent
-                  .replace(/<br\s*\/?>/gi, '\n') // Convert <br> tags to newlines
-                  .replace(/<\/p>/gi, '\n') // Convert closing </p> tags to newlines
-                  .replace(/<p[^>]*>/gi, '') // Remove opening <p> tags
-                  .replace(/<[^>]*>/g, '') // Remove any other HTML tags
-                  .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
-                  .trim();
+                if (selection.rangeCount > 0) {
+                  const range = selection.getRangeAt(0);
+                  const fragment = range.cloneContents();
+                  
+                  // Convert the fragment to HTML and then process it
+                  const tempDiv = document.createElement('div');
+                  tempDiv.appendChild(fragment);
+                  
+                  // Get the HTML content
+                  const htmlContent = tempDiv.innerHTML;
+                  
+                  // Convert HTML to text while preserving paragraph breaks
+                  selectedText = htmlContent
+                    .replace(/<br\s*\/?>/gi, '\n') // Convert <br> tags to newlines
+                    .replace(/<\/p>/gi, '\n') // Convert closing </p> tags to newlines
+                    .replace(/<p[^>]*>/gi, '') // Remove opening <p> tags
+                    .replace(/<[^>]*>/g, '') // Remove any other HTML tags
+                    .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
+                    .trim();
+                }
+                
+                if (selectedText.length > 0 && onAddToNarrative) {
+                  onAddToNarrative(selectedText);
+                  // Don't clear selection - let user keep their selection
+                }
               }
-              
-              if (selectedText.length > 0 && onAddToNarrative) {
-                onAddToNarrative(selectedText);
-                // Don't clear selection - let user keep their selection
-              }
-            }
-          }}
-          tabIndex={0} // Make the container focusable for keyboard events
-        >
-          {messages.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
-            </div>
-          ) : (
-            messages.map((message, index) => renderMessage(message, index))
-          )}
-          
-          {isLoading && (
-            <div className="mb-4 chat-message">
-              {/* Loading Header */}
-              <div className="flex items-center justify-between mb-2 chat-message-header pl-4 pr-4">
-                <div className="text-sm font-medium text-gray-300">
-                  AI
-                </div>
-                <span className="text-sm text-gray-400">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+            }}
+            tabIndex={0} // Make the container focusable for keyboard events
+          >
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-400 py-8">
               </div>
-              
-              {/* Loading Content */}
-              <div className="text-white/95 rounded-lg px-4 py-3 chat-message-content">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
-                  <span className="text-sm">AI is thinking...</span>
+            ) : (
+              messages.map((message, index) => renderMessage(message, index))
+            )}
+            
+            {isLoading && (
+              <div className="mb-4 chat-message">
+                {/* Loading Header */}
+                <div className="flex items-center justify-between mb-2 chat-message-header pl-4 pr-4">
+                  <div className="text-sm font-medium text-gray-300">
+                    AI
+                  </div>
+                  <span className="text-sm text-gray-400">
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                
+                {/* Loading Content */}
+                <div className="text-white/95 rounded-lg px-4 py-3 chat-message-content">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                    <span className="text-sm">AI is thinking...</span>
+                  </div>
                 </div>
               </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Input - Fixed at bottom */}
+        <div className="border-t border-white/10 p-4 flex-shrink-0">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+            {/* Background container with rounded corners */}
+            <div className="bg-white/10 rounded-lg overflow-hidden">
+              {/* Textarea container - let it grow naturally */}
+              <div className="pt-2 px-1">
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your message..."
+                  className="w-full text-white/95 resize-none focus:outline-none min-h-[40px] px-3 py-2"
+                  style={{ lineHeight: '24px', maxHeight: '240px' }}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
-          )}
-          
-          <div ref={messagesEndRef} />
+            <div className="flex justify-between items-center flex-shrink-0">
+              <div className="relative">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => onModelChange?.(e.target.value)}
+                  className="px-3 py-1 text-xs bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
+                  style={{
+                    backgroundImage: 'none',
+                    paddingRight: '12px',
+                    textAlign: 'center'
+                  }}
+                  disabled={isLoading}
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.id} value={model.id} className="bg-gray-800 text-white text-center">
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                {systemPromptTitle && (
+                  <span className="mr-1 text-xs text-white/60 max-w-[120px] truncate align-middle" title={systemPromptTitle}>
+                    {systemPromptTitle}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={onOpenSystemPrompts}
+                  className="w-8 h-8 bg-white/10 text-white/60 hover:text-white hover:bg-white/20 rounded-full transition-colors flex items-center justify-center"
+                  title="System Prompts"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                </button>
+                {onOpenConversations && (
+                  <button
+                    type="button"
+                    onClick={onOpenConversations}
+                    className="w-8 h-8 bg-white/10 text-white/60 hover:text-white hover:bg-white/20 rounded-full transition-colors flex items-center justify-center"
+                    title="Conversations"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={!inputValue.trim() || isLoading}
+                  className={`w-8 h-8 text-xs rounded-full transition-colors flex items-center justify-center ${
+                    !inputValue.trim() || isLoading 
+                      ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                      : 'bg-white/20 text-white/95 hover:text-white/95 hover:bg-white/30'
+                  }`}
+                  title="Send message"
+                >
+                  <svg className="w-3 h-3 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
-
-      {/* Input - Fixed at bottom */}
-      <div className="border-t border-white/10 p-4 flex-shrink-0">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          {/* Background container with rounded corners */}
-          <div className="bg-white/10 rounded-lg overflow-hidden">
-            {/* Textarea container - let it grow naturally */}
-            <div className="pt-2 px-1">
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your message..."
-                className="w-full text-white/95 resize-none focus:outline-none min-h-[40px] px-3 py-2"
-                style={{ lineHeight: '24px', maxHeight: '240px' }}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-          <div className="flex justify-between items-center flex-shrink-0">
-            <div className="relative">
-              <select
-                value={selectedModel}
-                onChange={(e) => onModelChange?.(e.target.value)}
-                className="px-3 py-1 text-xs bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
-                style={{
-                  backgroundImage: 'none',
-                  paddingRight: '12px',
-                  textAlign: 'center'
-                }}
-                disabled={isLoading}
-              >
-                {availableModels.map((model) => (
-                  <option key={model.id} value={model.id} className="bg-gray-800 text-white text-center">
-                    {model.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onOpenSystemPromptModal}
-                className="w-8 h-8 bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/95 rounded-full transition-colors flex items-center justify-center"
-                title="Customize AI behavior"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className={`w-8 h-8 text-xs rounded-full transition-colors flex items-center justify-center ${
-                  !inputValue.trim() || isLoading 
-                                ? 'bg-white/10 text-white/40 cursor-not-allowed'
-              : 'bg-white/20 text-white/95 hover:text-white/95 hover:bg-white/30'
-                }`}
-                title="Send message"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+    </>
   );
 } 

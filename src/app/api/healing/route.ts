@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
 
 // Types for our request body
 interface HealingRequest {
@@ -10,8 +11,6 @@ interface HealingRequest {
 
 export async function POST(request: Request) {
   try {
-    console.log('Healing API called');
-    
     // Get the API keys from environment variables
     const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
     const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_CLIENT_ENCRYPTION_KEY;
@@ -51,10 +50,8 @@ export async function POST(request: Request) {
         }))
       );
 
-      console.log('Processing request with', decryptedMessages.length, 'messages');
-
       // Decrypt the system prompt if provided, otherwise use default
-      let systemPromptContent = 'You are a Jungian therapeutic assistant, helping users explore their psyche through the lens of analytical psychology. Respond with depth, empathy, and wisdom.';
+      let systemPromptContent = DEFAULT_SYSTEM_PROMPT;
       if (body.systemPrompt) {
         systemPromptContent = await decryptClientSide(body.systemPrompt, ENCRYPTION_KEY);
       }
@@ -104,16 +101,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // Log only the message structure (roles) for debugging, not content
-      const messageRoles = messages.map(msg => msg.role);
-      console.log('Message roles being sent:', messageRoles);
-      
-      // Additional debugging: count each role type
-      const roleCounts = messageRoles.reduce((acc, role) => {
-        acc[role] = (acc[role] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log('Role counts:', roleCounts);
+      // Validate message format before sending to API
 
       // Validate message format before sending to API
       if (messages.length < 2) {
@@ -127,7 +115,6 @@ export async function POST(request: Request) {
       const messagesAfterSystem = messages.slice(1);
       for (let i = 1; i < messagesAfterSystem.length; i++) {
         if (messagesAfterSystem[i].role === messagesAfterSystem[i-1].role) {
-          console.error('Invalid message format: consecutive messages of same role detected');
           return NextResponse.json(
             { error: 'Invalid message format: consecutive messages of same role' },
             { status: 400 }
@@ -165,7 +152,6 @@ export async function POST(request: Request) {
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('Perplexity API error:', error);
         return NextResponse.json(
           { error: `Perplexity API error: ${error}` },
           { status: response.status }
@@ -184,14 +170,12 @@ export async function POST(request: Request) {
         usage: data.usage
       });
     } catch (decryptionError) {
-      console.error('Decryption error:', decryptionError);
       return NextResponse.json(
         { error: 'Failed to decrypt request data' },
         { status: 400 }
       );
     }
   } catch (error) {
-    console.error('Healing API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

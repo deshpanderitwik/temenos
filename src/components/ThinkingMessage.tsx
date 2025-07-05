@@ -24,7 +24,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-100 mb-2 mt-3">{children}</h1>,
     h2: ({children}: any) => <h2 className="text-base font-bold text-gray-100 mb-2 mt-2">{children}</h2>,
     h3: ({children}: any) => <h3 className="text-sm font-bold text-gray-100 mb-1 mt-2">{children}</h3>,
-    p: ({children}: any) => <p className="text-gray-100 mb-2 leading-relaxed text-sm">{children}</p>,
+    p: ({children}: any) => <p className="text-gray-100 mb-2 leading-relaxed text-sm [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
     strong: ({children}: any) => <strong className="font-bold text-gray-50">{children}</strong>,
     em: ({children}: any) => <em className="italic text-gray-200">{children}</em>,
     ul: ({children}: any) => (
@@ -59,7 +59,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-200 mb-2 mt-3">{children}</h1>,
     h2: ({children}: any) => <h2 className="text-base font-bold text-gray-200 mb-2 mt-2">{children}</h2>,
     h3: ({children}: any) => <h3 className="text-sm font-bold text-gray-200 mb-1 mt-2">{children}</h3>,
-    p: ({children}: any) => <p className="text-gray-300 text-sm mb-2 leading-relaxed">{children}</p>,
+    p: ({children}: any) => <p className="text-gray-300 text-sm mb-2 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
     strong: ({children}: any) => <strong className="font-bold text-gray-200">{children}</strong>,
     em: ({children}: any) => <em className="italic text-gray-300">{children}</em>,
     ul: ({children}: any) => (

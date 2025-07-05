@@ -46,7 +46,6 @@ export async function GET(
       throw error;
     }
   } catch (error) {
-    console.error('Error loading conversation');
     return NextResponse.json({ error: 'Failed to load conversation' }, { status: 500 });
   }
 }
@@ -70,7 +69,6 @@ export async function DELETE(
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting conversation');
     return NextResponse.json({ error: 'Failed to delete conversation' }, { status: 500 });
   }
 } 

@@ -4,6 +4,9 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
+import Document from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 
 interface Narrative {
@@ -53,7 +56,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
   // Simplified state variables
   const [isSaving, setIsSaving] = useState(false);
-  const [isTitleSaving, setIsTitleSaving] = useState(false);
   const [titleOpacity, setTitleOpacity] = useState(1);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   
@@ -72,7 +74,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      Document,
+      Paragraph.configure({
+        HTMLAttributes: {
+          class: 'whitespace-pre-wrap',
+        },
+      }),
+      Text,
       Placeholder.configure({
         placeholder: 'Begin writing your narrative here... Share your thoughts, insights, and the story that emerges from your exploration.',
       }),
@@ -150,14 +158,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         return;
       }
       
-      console.log('Auto-saving narrative:', {
-        id: narrativeState.id,
-        title: titleToSave,
-        contentLength: contentToSave.length,
-        draftContentLength: draftContentToSave?.length || 0,
-        isDraftMode
-      });
-      
       const response = await fetch('/api/narratives', {
         method: 'POST',
         headers: {
@@ -173,7 +173,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Auto-save failed with status:', response.status, 'Response:', errorText);
         throw new Error(`Auto-save failed: ${response.status} ${errorText}`);
       }
 
@@ -195,7 +194,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         }
       }
     } catch (error) {
-      console.error('Error auto-saving narrative:', error);
+      // Silent error handling for privacy
     } finally {
       setIsSaving(false);
     }
@@ -243,14 +242,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         return;
       }
       
-      console.log('Saving narrative:', {
-        id: narrativeState.id,
-        title: titleToSave,
-        contentLength: contentToSave.length,
-        draftContentLength: draftContentToSave?.length || 0,
-        isDraftMode
-      });
-      
       const response = await fetch('/api/narratives', {
         method: 'POST',
         headers: {
@@ -266,7 +257,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Save failed with status:', response.status, 'Response:', errorText);
         throw new Error(`Save failed: ${response.status} ${errorText}`);
       }
 
@@ -288,7 +278,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         }
       }
     } catch (error) {
-      console.error('Error saving narrative:', error);
+      // Silent error handling for privacy
     } finally {
       setIsSaving(false);
     }
@@ -325,14 +315,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         // Only update title if we're loading a different narrative
         const shouldUpdateTitle = prev.id !== currentNarrative.id;
         
-        console.log('Loading narrative:', {
-          prevId: prev.id,
-          currentId: currentNarrative.id,
-          prevTitle: prev.title,
-          narrativeTitle: currentNarrative.title,
-          shouldUpdateTitle
-        });
-        
         return {
           id: currentNarrative.id,
           title: shouldUpdateTitle ? (currentNarrative.title || '') : prev.title,
@@ -346,7 +328,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       // Reset to default state when no narrative is selected
       setNarrativeState({
         id: null,
-        title: '',
+        title: 'New Narrative',
         mainContent: '',
         draftContent: '',
         lastSaved: null,
@@ -366,7 +348,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       const contentToLoad = isDraftMode 
         ? currentNarrative.draftContent || '<p></p>'
         : currentNarrative.content || '<p></p>';
-      editor.commands.setContent(contentToLoad);
+      
+      // Only update editor content if it's actually different from current content
+      // This prevents losing user input when auto-save triggers a re-render
+      const currentEditorContent = editor.getHTML();
+      if (currentEditorContent !== contentToLoad) {
+        editor.commands.setContent(contentToLoad);
+      }
     }
   }, [currentNarrative, editor, isDraftMode]);
 
@@ -374,11 +362,21 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
   const addTextToContent = useCallback((text: string) => {
     if (!editor) return;
     
-    const formattedText = text
-      .split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => `<p>${line.trim()}</p>`)
-      .join('');
+    // Check if the text contains multiple paragraphs (has double newlines)
+    const hasMultipleParagraphs = text.includes('\n\n') || text.split('\n').filter(line => line.trim().length > 0).length > 1;
+    
+    let formattedText;
+    if (hasMultipleParagraphs) {
+      // If multiple paragraphs, wrap each non-empty line in <p> tags
+      formattedText = text
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .map(line => `<p>${line}</p>`)
+        .join('');
+    } else {
+      // If single paragraph, just add the text without wrapping in <p> tags
+      formattedText = text.trim();
+    }
     
     // Update state based on current mode
     setNarrativeState(prev => ({
@@ -425,8 +423,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       : narrativeState.mainContent || '<p></p>';
     
     editor.commands.setContent(contentToLoad);
-    
-    console.log('Mode switched to:', newMode ? 'draft' : 'main', 'Title preserved:', narrativeState.title);
   }, [editor, isDraftMode, narrativeState, saveNarrative, setIsDraftMode]);
 
   // Expose functions to parent component via ref
@@ -435,8 +431,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     saveCurrentContent,
     handleModeSwitch
   }), [addTextToContent, saveCurrentContent, handleModeSwitch]);
-
-  NarrativePanel.displayName = 'NarrativePanel';
 
   return (
     <div className="h-full flex flex-col bg-[#141414]">
@@ -467,7 +461,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 // Set a new timeout to save the title after a delay
                 titleSaveTimeoutRef.current = setTimeout(async () => {
                   if (newTitle && newTitle !== 'New Narrative' && newTitle !== currentNarrative?.title) {
-                    setIsTitleSaving(true);
                     try {
                       const response = await fetch('/api/narratives', {
                         method: 'POST',
@@ -485,7 +478,11 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                       if (response.ok) {
                         const data = await response.json();
                         if (data.success && data.narrative) {
-                          onNarrativeUpdate(data.narrative);
+                          // Only update parent state if the narrative ID is different or if we don't have an ID yet
+                          // This prevents unnecessary re-renders that could cause content loss
+                          if (!narrativeState.id || data.narrative.id !== narrativeState.id) {
+                            onNarrativeUpdate(data.narrative);
+                          }
                           setNarrativeState(prev => ({
                             ...prev,
                             lastSaved: new Date(),
@@ -496,9 +493,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                         }
                       }
                     } catch (error) {
-                      console.error('Error saving title:', error);
-                    } finally {
-                      setIsTitleSaving(false);
+                      // Silent error handling for privacy
                     }
                   }
                 }, 1000); // Save after 1 second of no typing
@@ -522,7 +517,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 
                 // Save immediately when title is changed
                 if (trimmedTitle && trimmedTitle !== 'New Narrative' && trimmedTitle !== currentNarrative?.title) {
-                  setIsTitleSaving(true);
                   try {
                     const response = await fetch('/api/narratives', {
                       method: 'POST',
@@ -540,7 +534,11 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                     if (response.ok) {
                       const data = await response.json();
                       if (data.success && data.narrative) {
-                        onNarrativeUpdate(data.narrative);
+                        // Only update parent state if the narrative ID is different or if we don't have an ID yet
+                        // This prevents unnecessary re-renders that could cause content loss
+                        if (!narrativeState.id || data.narrative.id !== narrativeState.id) {
+                          onNarrativeUpdate(data.narrative);
+                        }
                         setNarrativeState(prev => ({
                           ...prev,
                           lastSaved: new Date(),
@@ -551,9 +549,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                       }
                     }
                   } catch (error) {
-                    console.error('Error saving title:', error);
-                  } finally {
-                    setIsTitleSaving(false);
+                    // Silent error handling for privacy
                   }
                 }
               }}
@@ -582,12 +578,6 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 cursor: titleOpacity < 1 ? 'pointer' : 'text'
               }}
             />
-            {/* Visual indicator for title saving */}
-            {isTitleSaving && (
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-gray-400 border-t-white rounded-full animate-spin"></div>
-              </div>
-            )}
           </div>
         </div>
         {/* Editor Content */}
@@ -613,5 +603,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     </div>
   );
 });
+
+NarrativePanel.displayName = 'NarrativePanel';
 
 export default NarrativePanel;

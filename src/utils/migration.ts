@@ -168,7 +168,6 @@ export async function smartDecrypt(encryptedText: string, password: string): Pro
   } catch (error) {
     // If new format fails, try legacy format
     if (isLegacyFormat(encryptedText)) {
-      console.log('Detected legacy format, attempting migration...');
       return await decryptLegacy(encryptedText, password);
     }
     throw error;
@@ -185,7 +184,6 @@ export async function smartDecryptClientSide(encryptedText: string, key: string)
   } catch (error) {
     // If client-side format fails, try legacy format
     if (isLegacyFormat(encryptedText)) {
-      console.log('Detected legacy format for client-side, attempting legacy decryption...');
       return await decryptLegacy(encryptedText, key);
     }
     throw error;
