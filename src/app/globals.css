@@ -549,8 +549,6 @@ summary {
 /* Immersive narrative typography */
 .narrative-editor {
   font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
-  max-width: 42em;
-  margin: 0 auto;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;

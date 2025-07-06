@@ -248,6 +248,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
               // Only update local state
               setNarrativeState(prev => ({
                 ...prev,
+                id: data.narrative?.id || prev.id, // Update ID if a new narrative was created
                 lastSaved: new Date(),
                 hasUnsavedChanges: false
               }));
@@ -280,6 +281,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       if (data.success) {
         setNarrativeState(prev => ({
           ...prev,
+          id: data.narrative?.id || prev.id, // Update ID if a new narrative was created
           lastSaved: new Date(),
           hasUnsavedChanges: false
         }));
@@ -333,6 +335,14 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.narrative) {
+              // Update local state with the returned narrative data
+              setNarrativeState(prev => ({
+                ...prev,
+                id: data.narrative?.id || prev.id, // Update ID if a new narrative was created
+                lastSaved: new Date(),
+                hasUnsavedChanges: false
+              }));
+              
               // Only update parent state if this is a manual save (not auto-save)
               if (content) {
                 onNarrativeUpdate(data.narrative);
@@ -366,6 +376,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       if (data.success) {
         setNarrativeState(prev => ({
           ...prev,
+          id: data.narrative?.id || prev.id, // Update ID if a new narrative was created
           lastSaved: new Date(),
           hasUnsavedChanges: false
         }));
@@ -581,14 +592,12 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     <div className="h-full flex flex-col bg-[#141414]">
       {/* Title and Editor Content grouped for unified nudge */}
       <div className="narrative-content-wrapper pt-6 pl-4 h-full flex flex-col">
-        <div className="max-w-[42em] mx-auto px-6" style={{ 
-          marginLeft: 'calc(max(0px, 50% - 21em - 4px))'
-        }}>
+        <div className="w-[664px] mx-auto">
           {/* Title is independent of mode changes - remains the same in both draft and main modes */}
           <div className="relative">
             <input
               type="text"
-              className="narrative-title text-xl font-semibold text-white outline-none border-none bg-transparent w-full transition-all duration-200"
+              className="narrative-title text-xl font-semibold text-white outline-none border-none bg-transparent w-full transition-all duration-200 px-6"
               value={narrativeState.title}
               onChange={e => {
                 const newTitle = e.target.value;
@@ -654,21 +663,23 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         </div>
         {/* Editor Content */}
         <div className="flex-1 overflow-hidden min-h-0 relative">
-          <div 
-            ref={scrollContainerRef}
-            className="absolute inset-0 overflow-y-auto scrollbar-hide"
-          >
-            <EditorContent 
-              editor={editor} 
-              className="narrative-editor bg-[#141414]"
-            />
-            {/* Gradient mask overlay at the top of the editor */}
+          <div className="w-[664px] mx-auto h-full relative">
             <div 
-              className="absolute top-0 left-0 right-0 h-8 pointer-events-none z-10"
-              style={{
-                background: 'linear-gradient(to bottom, #141414 0%, rgba(20, 20, 20, 0.8) 50%, rgba(20, 20, 20, 0) 100%)'
-              }}
-            />
+              ref={scrollContainerRef}
+              className="absolute inset-0 overflow-y-auto scrollbar-hide"
+            >
+              <EditorContent 
+                editor={editor} 
+                className="narrative-editor bg-[#141414] h-full"
+              />
+              {/* Gradient mask overlay at the top of the editor */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-8 pointer-events-none z-10"
+                style={{
+                  background: 'linear-gradient(to bottom, #141414 0%, rgba(20, 20, 20, 0.8) 50%, rgba(20, 20, 20, 0) 100%)'
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
