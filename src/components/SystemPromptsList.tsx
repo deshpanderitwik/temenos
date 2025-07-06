@@ -19,6 +19,7 @@ interface SystemPromptsListProps {
   onDeletePrompt: (promptId: string) => void;
   onEditPrompt?: (prompt: SystemPrompt, viewOnly?: boolean) => void;
   isInsideModal?: boolean;
+  preloadedPrompts?: Array<{ id: string; title: string; body: string; created: string; lastModified: string }>;
 }
 
 export default function SystemPromptsList({
@@ -30,17 +31,24 @@ export default function SystemPromptsList({
   onDeletePrompt,
   onEditPrompt,
   isInsideModal = false,
+  preloadedPrompts,
 }: SystemPromptsListProps) {
   const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      loadPrompts();
+      if (preloadedPrompts && preloadedPrompts.length > 0) {
+        // Use preloaded data if available
+        setPrompts(preloadedPrompts);
+      } else {
+        // Fallback to API call if no preloaded data
+        loadPrompts();
+      }
     } else {
       // Reset state when modal closes
       setPrompts([]);
     }
-  }, [isOpen]);
+  }, [isOpen, preloadedPrompts]);
 
   const loadPrompts = async () => {
     try {

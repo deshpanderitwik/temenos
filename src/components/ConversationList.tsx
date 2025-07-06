@@ -18,6 +18,7 @@ interface ConversationListProps {
   onConversationSelect: (conversationId: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (conversationId: string) => void;
+  preloadedConversations?: Array<{ id: string; title: string; created: string; lastModified: string; messageCount: number }>;
 }
 
 export default function ConversationList({
@@ -26,19 +27,26 @@ export default function ConversationList({
   currentConversationId,
   onConversationSelect,
   onNewConversation,
-  onDeleteConversation
+  onDeleteConversation,
+  preloadedConversations
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<ConversationMetadata[]>([]);
 
   // Load conversations when the sidebar is opened
   useEffect(() => {
     if (isOpen) {
-      loadConversations();
+      if (preloadedConversations && preloadedConversations.length > 0) {
+        // Use preloaded data if available
+        setConversations(preloadedConversations);
+      } else {
+        // Fallback to API call if no preloaded data
+        loadConversations();
+      }
     } else {
       // Reset state when modal closes
       setConversations([]);
     }
-  }, [isOpen]);
+  }, [isOpen, preloadedConversations]);
 
   const loadConversations = async () => {
     try {

@@ -27,6 +27,15 @@ body {
   font-family: var(--font-work-sans), 'Work Sans', Arial, Helvetica, sans-serif;
 }
 
+/* Global paragraph spacing - 24px between paragraphs */
+p {
+  margin-bottom: 1.5rem; /* 24px equivalent */
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -81,7 +90,7 @@ body {
 }
 
 .ProseMirror p {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem; /* 24px equivalent */
 }
 
 .ProseMirror h1 {
@@ -309,7 +318,7 @@ summary {
 }
 
 .chat-message p {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.5rem; /* 24px equivalent */
   margin-top: 0.75rem;
 }
 
@@ -423,6 +432,8 @@ summary {
   contain: none; /* Remove contain to prevent selection issues */
 }
 
+
+
 /* Narrative Editor Styles */
 .narrative-editor {
   transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -448,7 +459,7 @@ summary {
 /* Draft mode specific styles */
 
 .narrative-editor .ProseMirror p {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem; /* 24px equivalent */
   color: #f3f4f6;
   font-size: 18px;
   line-height: 1.7;
@@ -576,7 +587,7 @@ summary {
 }
 
 .narrative-editor .ProseMirror p {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.5rem; /* 24px equivalent */
   text-align: left;
   hyphens: auto;
   -webkit-hyphens: auto;
@@ -716,7 +727,7 @@ summary {
 .chat-message-content .prose p,
 .chat-message-content .prose ul,
 .chat-message-content .prose ol {
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 1.5rem !important; /* 24px equivalent */
   margin-top: 0.5rem !important;
 }
 
@@ -887,6 +898,19 @@ summary {
 
 .chat-message-content .prose p {
   white-space: normal !important;
+}
+
+/* Thinking content paragraph spacing - 16px (must come after prose rules) */
+.chat-message-content .thinking-content .prose p,
+.chat-message-content .thinking-content p,
+.chat-message-content section.bg-white\/10 p {
+  margin-bottom: 1rem !important; /* 16px equivalent */
+}
+
+.chat-message-content .thinking-content .prose p:last-child,
+.chat-message-content .thinking-content p:last-child,
+.chat-message-content section.bg-white\/10 p:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* Table styling for chat messages */

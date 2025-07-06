@@ -42,6 +42,11 @@ export default function SessionLayout() {
   });
   const [selectedModel, setSelectedModel] = useState('r1-1776');
   
+  // Preloaded data state
+  const [preloadedConversations, setPreloadedConversations] = useState<Array<{ id: string; title: string; created: string; lastModified: string; messageCount: number }>>([]);
+  const [preloadedNarratives, setPreloadedNarratives] = useState<Array<{ id: string; title: string; created: string; lastModified: string; characterCount: number }>>([]);
+  const [preloadedSystemPrompts, setPreloadedSystemPrompts] = useState<Array<{ id: string; title: string; body: string; created: string; lastModified: string }>>([]);
+  
   // Breathwork timer state
   const [breathworkIsFullScreen, setBreathworkIsFullScreen] = useState(false);
   const breathworkTimerRef = useRef<BreathworkTimerRef | null>(null);
@@ -119,10 +124,78 @@ export default function SessionLayout() {
     }
   };
 
+  // Preload all data functions
+  const preloadConversations = async () => {
+    try {
+      const response = await fetch('/api/conversations');
+      if (response.ok) {
+        const data = await response.json();
+        setPreloadedConversations(data.conversations || []);
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+    }
+  };
+
+  const preloadNarratives = async () => {
+    try {
+      const response = await fetch('/api/narratives');
+      if (response.ok) {
+        const data = await response.json();
+        setPreloadedNarratives(data.narratives || []);
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+    }
+  };
+
+  const preloadSystemPrompts = async () => {
+    try {
+      const response = await fetch('/api/system-prompts');
+      if (response.ok) {
+        const data = await response.json();
+        const now = new Date().toISOString();
+        const defaultPrompt = {
+          id: 'default',
+          title: 'Temenos Guide',
+          body: DEFAULT_SYSTEM_PROMPT,
+          created: now,
+          lastModified: now,
+        };
+        setPreloadedSystemPrompts([defaultPrompt, ...(data.prompts || [])]);
+      } else {
+        const now = new Date().toISOString();
+        const defaultPrompt = {
+          id: 'default',
+          title: 'Temenos Guide',
+          body: DEFAULT_SYSTEM_PROMPT,
+          created: now,
+          lastModified: now,
+        };
+        setPreloadedSystemPrompts([defaultPrompt]);
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+      const now = new Date().toISOString();
+      const defaultPrompt = {
+        id: 'default',
+        title: 'Temenos Guide',
+        body: DEFAULT_SYSTEM_PROMPT,
+        created: now,
+        lastModified: now,
+      };
+      setPreloadedSystemPrompts([defaultPrompt]);
+    }
+  };
+
   // Load latest conversation and narrative on component mount
   useEffect(() => {
     const loadLatestItems = async () => {
+      // Preload all data in parallel
       await Promise.all([
+        preloadConversations(),
+        preloadNarratives(),
+        preloadSystemPrompts(),
         loadLatestConversation(),
         loadLatestNarrative()
       ]);
@@ -212,6 +285,8 @@ export default function SessionLayout() {
     if (currentConversation?.id === deletedConversationId) {
       setCurrentConversation(null);
     }
+    // Refresh preloaded conversations after deletion
+    preloadConversations();
   };
 
   const handleConversationUpdate = async (updatedConversation: Conversation) => {
@@ -228,6 +303,9 @@ export default function SessionLayout() {
 
       if (!response.ok) {
         // Silent error handling for privacy
+      } else {
+        // Refresh preloaded conversations after update
+        await preloadConversations();
       }
     } catch (error) {
       // Silent error handling for privacy
@@ -256,10 +334,17 @@ export default function SessionLayout() {
     if (currentNarrative?.id === deletedNarrativeId) {
       setCurrentNarrative(null);
     }
+    // Refresh preloaded narratives after deletion
+    preloadNarratives();
   };
 
   const handleNarrativeUpdate = (updatedNarrative: Narrative | null) => {
     setCurrentNarrative(updatedNarrative);
+    
+    // Refresh preloaded narratives after update
+    if (updatedNarrative) {
+      preloadNarratives();
+    }
   };
 
   // Add text to the current narrative (modified to check draft mode)
@@ -571,6 +656,7 @@ export default function SessionLayout() {
             onConversationSelect={handleConversationSelect}
             onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
+            preloadedConversations={preloadedConversations}
           />
         )}
 
@@ -583,6 +669,7 @@ export default function SessionLayout() {
             onNarrativeSelect={handleNarrativeSelect}
             onNewNarrative={handleNewNarrative}
             onDeleteNarrative={handleDeleteNarrative}
+            preloadedNarratives={preloadedNarratives}
           />
         )}
 
@@ -592,6 +679,7 @@ export default function SessionLayout() {
             onClose={() => setSystemPromptsOpen(false)}
             activePrompt={systemPrompt}
             setActivePrompt={setSystemPrompt}
+            preloadedPrompts={preloadedSystemPrompts}
           />
         )}
       </div>

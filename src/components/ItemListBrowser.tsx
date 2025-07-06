@@ -64,7 +64,7 @@ export default function ItemListBrowser<T>({
 
               {/* List */}
               <div className="flex-1 min-h-0 overflow-y-auto p-2 scrollbar-hide">
-                {items.length > 0 && (
+                {items.length > 0 ? (
                   <div>
                     {items.map((item, index) => {
                       const id = getItemId(item);
@@ -110,6 +110,19 @@ export default function ItemListBrowser<T>({
                         </div>
                       );
                     })}
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-center h-full pt-8">
+                    <div className="text-center text-gray-400">
+                      <p className="text-sm leading-relaxed max-w-xs">
+                        {newItemLabel === '+ New Narrative' 
+                          ? "No narratives yet"
+                          : newItemLabel === '+ New Conversation'
+                          ? "No conversations yet"
+                          : "No items yet"
+                        }
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -7,9 +7,10 @@ interface SystemPromptsModalProps {
   onClose: () => void;
   activePrompt: { title: string; body: string };
   setActivePrompt: (prompt: { title: string; body: string }) => void;
+  preloadedPrompts?: Array<{ id: string; title: string; body: string; created: string; lastModified: string }>;
 }
 
-export default function SystemPromptsModal({ isOpen, onClose, activePrompt, setActivePrompt }: SystemPromptsModalProps) {
+export default function SystemPromptsModal({ isOpen, onClose, activePrompt, setActivePrompt, preloadedPrompts }: SystemPromptsModalProps) {
   const [mode, setMode] = useState<'list' | 'form'>('list');
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingPrompt, setEditingPrompt] = useState<null | { id: string; title: string; body: string; created: string; lastModified: string }>(null);
@@ -51,6 +52,7 @@ export default function SystemPromptsModal({ isOpen, onClose, activePrompt, setA
               onEditPrompt={(prompt, viewOnlyFlag) => { setEditingPrompt(prompt); setMode('form'); setViewOnly(!!viewOnlyFlag); }}
               isInsideModal={true}
               key={refreshKey}
+              preloadedPrompts={preloadedPrompts}
             />
           ) : (
             <SystemPromptForm

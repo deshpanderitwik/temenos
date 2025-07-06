@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkSmartypants from 'remark-smartypants';
 
 interface ThinkingMessageProps {
   content: string;
@@ -23,8 +24,8 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
   const mainMarkdownComponents = {
     h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-100 mb-2 mt-3">{children}</h1>,
     h2: ({children}: any) => <h2 className="text-base font-bold text-gray-100 mb-2 mt-2">{children}</h2>,
-    h3: ({children}: any) => <h3 className="text-sm font-bold text-gray-100 mb-1 mt-2">{children}</h3>,
-    p: ({children}: any) => <p className="text-gray-100 mb-2 leading-relaxed text-sm [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
+    h3: ({children}: any) => <h3 className="text-xl font-bold text-gray-100 mb-1 mt-2">{children}</h3>,
+    p: ({children}: any) => <p className="text-gray-100 mb-6 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
     strong: ({children}: any) => <strong className="font-bold text-gray-50">{children}</strong>,
     em: ({children}: any) => <em className="italic text-gray-200">{children}</em>,
     ul: ({children}: any) => (
@@ -41,7 +42,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
       // Check if this is an ordered list by looking at the parent
       const isOrdered = ordered || (typeof index === 'number');
       return (
-        <li className="text-gray-100 flex items-start text-sm">
+        <li className="text-gray-100 flex items-start">
           <span className="mr-2 flex-shrink-0 min-w-[1.5rem] text-left">
             {isOrdered ? `${(index || 0) + 1}.` : '•'}
           </span>
@@ -56,10 +57,10 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
 
   // Smaller markdown components for thinking content
   const thinkingMarkdownComponents = {
-    h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-200 mb-2 mt-3">{children}</h1>,
-    h2: ({children}: any) => <h2 className="text-base font-bold text-gray-200 mb-2 mt-2">{children}</h2>,
-    h3: ({children}: any) => <h3 className="text-sm font-bold text-gray-200 mb-1 mt-2">{children}</h3>,
-    p: ({children}: any) => <p className="text-gray-300 text-sm mb-2 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
+    h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-200 mb-2 mt-0">{children}</h1>,
+    h2: ({children}: any) => <h2 className="text-base font-bold text-gray-200 mb-2 mt-0">{children}</h2>,
+    h3: ({children}: any) => <h3 className="text-sm font-bold text-gray-200 mb-1 mt-0">{children}</h3>,
+    p: ({children}: any) => <p className="text-gray-300 text-sm mb-4 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
     strong: ({children}: any) => <strong className="font-bold text-gray-200">{children}</strong>,
     em: ({children}: any) => <em className="italic text-gray-300">{children}</em>,
     ul: ({children}: any) => (
@@ -123,7 +124,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     return (
       <div className={className}>
         <ReactMarkdown 
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkSmartypants]}
           components={mainMarkdownComponents}
         >
           {content}
@@ -138,7 +139,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
       {parsed.beforeThinking && (
         <div className="mb-3">
           <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkSmartypants]}
             components={mainMarkdownComponents}
           >
             {parsed.beforeThinking}
@@ -151,33 +152,21 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
         <div className="my-3">
           <button
             onClick={() => setShowThinking(!showThinking)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-gray-200 text-sm rounded-lg transition-colors"
+            className="px-3 py-1 text-xs bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors rounded-full"
           >
-            <span>🧠</span>
-            <span>{showThinking ? 'Hide' : 'Show'} Thinking</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${showThinking ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            {showThinking ? 'Hide' : 'Show'} Thinking
           </button>
 
           {/* Thinking content (collapsible) */}
           {showThinking && (
-            <div className="mt-3 p-3 bg-gray-600 bg-opacity-50 rounded-lg border-l-4 border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-blue-300 text-sm font-medium">AI Thinking Process:</span>
-              </div>
+            <section className="mt-3 bg-white/10 rounded-lg px-[20px] py-2 pb-4 [&>*]:m-0">
               <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkSmartypants]}
                 components={thinkingMarkdownComponents}
               >
                 {parsed.thinkingContent}
               </ReactMarkdown>
-            </div>
+            </section>
           )}
         </div>
       )}
@@ -186,7 +175,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
       {parsed.afterThinking && (
         <div>
           <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkSmartypants]}
             components={mainMarkdownComponents}
           >
             {parsed.afterThinking}

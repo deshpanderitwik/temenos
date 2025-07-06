@@ -18,6 +18,7 @@ interface NarrativesListProps {
   onNarrativeSelect: (narrativeId: string) => void;
   onNewNarrative: () => void;
   onDeleteNarrative: (narrativeId: string) => void;
+  preloadedNarratives?: Array<{ id: string; title: string; created: string; lastModified: string; characterCount: number }>;
 }
 
 export default function NarrativesList({
@@ -27,18 +28,25 @@ export default function NarrativesList({
   onNarrativeSelect,
   onNewNarrative,
   onDeleteNarrative,
+  preloadedNarratives,
 }: NarrativesListProps) {
   const [narratives, setNarratives] = useState<Narrative[]>([]);
 
   // Load narratives when the sidebar is opened
   useEffect(() => {
     if (isOpen) {
-      loadNarratives();
+      if (preloadedNarratives && preloadedNarratives.length > 0) {
+        // Use preloaded data if available
+        setNarratives(preloadedNarratives);
+      } else {
+        // Fallback to API call if no preloaded data
+        loadNarratives();
+      }
     } else {
       // Reset state when modal closes
       setNarratives([]);
     }
-  }, [isOpen]);
+  }, [isOpen, preloadedNarratives]);
 
   const loadNarratives = async () => {
     try {
