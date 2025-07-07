@@ -9,6 +9,7 @@ import { encryptClientSide, decryptClientSide } from '@/utils/encryption';
 import ThinkingMessage from './ThinkingMessage';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
 import SystemPromptsList from './SystemPromptsList';
+import TextareaAutosize from 'react-textarea-autosize';
 
 
 // Markdown components for chat messages
@@ -132,26 +133,12 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
 
   // Ultra-simplified textarea height adjustment
   const adjustTextareaHeight = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    // Only adjust height if there's content
-    if (textarea.value.trim()) {
-      // Reset height to auto to get the correct scrollHeight
-      textarea.style.height = 'auto';
-      
-      // Set height to scrollHeight for perfect fit
-      const newHeight = Math.min(240, Math.max(40, textarea.scrollHeight));
-      textarea.style.height = `${newHeight}px`;
-    } else {
-      // If no content, reset to natural height
-      textarea.style.height = 'auto';
-    }
+    // No longer needed with react-textarea-autosize
   }, []);
 
   // Height adjustment on input change only
   useEffect(() => {
-    adjustTextareaHeight();
+    // No longer needed with react-textarea-autosize
   }, [inputValue, adjustTextareaHeight]);
 
   // Scroll to top of the latest message
@@ -454,9 +441,9 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
             <div className="bg-white/10 rounded-lg overflow-hidden">
               {/* Textarea container - let it grow naturally */}
               <div className="pt-2 px-1">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
+                <TextareaAutosize
+                  ref={textareaRef as any}
+                  value={inputValue || ''}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
@@ -465,6 +452,9 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                     lineHeight: '1.5'
                   }}
                   disabled={isLoading}
+                  minRows={2}
+                  maxRows={10}
+                  cacheMeasurements
                 />
               </div>
             </div>

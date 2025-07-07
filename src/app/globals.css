@@ -272,9 +272,9 @@ p:last-child {
 }
 
 /* Re-enable transitions when not resizing */
-.chat-panel:not(.resizing) * {
+/* .chat-panel:not(.resizing) * {
   transition: all 0.2s ease-in-out;
-}
+} */
 
 /* Optimize prose content rendering */
 .prose {
@@ -1213,4 +1213,8 @@ summary {
   opacity: 0.7;
   font-style: italic;
   display: block;
+}
+
+.auto-expand-textarea {
+  min-height: 40px;
 }
