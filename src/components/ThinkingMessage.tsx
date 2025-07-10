@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkSmartypants from 'remark-smartypants';
 
 interface ThinkingMessageProps {
   content: string;
@@ -25,7 +24,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-100 mb-2 mt-3">{children}</h1>,
     h2: ({children}: any) => <h2 className="text-base font-bold text-gray-100 mb-2 mt-2">{children}</h2>,
     h3: ({children}: any) => <h3 className="text-xl font-bold text-gray-100 mb-1 mt-2">{children}</h3>,
-    p: ({children}: any) => <p className="text-gray-100 mb-6 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
+    p: ({children}: any) => <p className="text-gray-100 mb-6 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0 whitespace-pre-wrap">{children}</p>,
     strong: ({children}: any) => <strong className="font-bold text-gray-50">{children}</strong>,
     em: ({children}: any) => <em className="italic text-gray-200">{children}</em>,
     ul: ({children}: any) => (
@@ -52,7 +51,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     },
     code: ({children}: any) => <code className="bg-gray-600 px-1 py-0.5 rounded text-xs font-mono text-gray-100">{children}</code>,
     pre: ({children}: any) => <pre className="bg-gray-600 p-2 rounded overflow-x-auto mb-2 text-xs">{children}</pre>,
-    blockquote: ({children}: any) => <blockquote className="border-l-4 border-white/10 pl-3 italic text-gray-300 mb-2 text-sm">{children}</blockquote>,
+    blockquote: ({children}: any) => <blockquote className="border-l-4 border-white/10 pl-3 italic text-gray-300 mb-2 text-base">{children}</blockquote>,
   };
 
   // Smaller markdown components for thinking content
@@ -60,7 +59,7 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-200 mb-2 mt-0">{children}</h1>,
     h2: ({children}: any) => <h2 className="text-base font-bold text-gray-200 mb-2 mt-0">{children}</h2>,
     h3: ({children}: any) => <h3 className="text-sm font-bold text-gray-200 mb-1 mt-0">{children}</h3>,
-    p: ({children}: any) => <p className="text-gray-300 text-sm mb-4 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
+    p: ({children}: any) => <p className="text-gray-300 text-sm mb-4 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0 whitespace-pre-wrap">{children}</p>,
     strong: ({children}: any) => <strong className="font-bold text-gray-200">{children}</strong>,
     em: ({children}: any) => <em className="italic text-gray-300">{children}</em>,
     ul: ({children}: any) => (
@@ -124,10 +123,10 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
     return (
       <div className={className}>
         <ReactMarkdown 
-          remarkPlugins={[remarkGfm, remarkSmartypants]}
+          remarkPlugins={[remarkGfm]}
           components={mainMarkdownComponents}
         >
-          {content}
+          {content.split('\n').join('\n\n')}
         </ReactMarkdown>
       </div>
     );
@@ -139,10 +138,10 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
       {parsed.beforeThinking && (
         <div className="mb-3">
           <ReactMarkdown 
-            remarkPlugins={[remarkGfm, remarkSmartypants]}
+            remarkPlugins={[remarkGfm]}
             components={mainMarkdownComponents}
           >
-            {parsed.beforeThinking}
+            {parsed.beforeThinking.split('\n').join('\n\n')}
           </ReactMarkdown>
         </div>
       )}
@@ -161,10 +160,10 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
           {showThinking && (
             <section className="mt-3 bg-white/10 rounded-lg px-[20px] py-2 pb-4 [&>*]:m-0">
               <ReactMarkdown 
-                remarkPlugins={[remarkGfm, remarkSmartypants]}
+                remarkPlugins={[remarkGfm]}
                 components={thinkingMarkdownComponents}
               >
-                {parsed.thinkingContent}
+                {parsed.thinkingContent.split('\n').join('\n\n')}
               </ReactMarkdown>
             </section>
           )}
@@ -175,10 +174,10 @@ export default function ThinkingMessage({ content, className = '' }: ThinkingMes
       {parsed.afterThinking && (
         <div>
           <ReactMarkdown 
-            remarkPlugins={[remarkGfm, remarkSmartypants]}
+            remarkPlugins={[remarkGfm]}
             components={mainMarkdownComponents}
           >
-            {parsed.afterThinking}
+            {parsed.afterThinking.split('\n').join('\n\n')}
           </ReactMarkdown>
         </div>
       )}

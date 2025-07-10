@@ -7,6 +7,7 @@ import ThinkingMessage from './ThinkingMessage';
 import SystemPromptsList from './SystemPromptsList';
 import SystemPromptForm from './SystemPromptForm';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
+import TextareaAutosize from 'react-textarea-autosize';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -216,16 +217,7 @@ export default function Chat() {
     return 'New Conversation';
   };
 
-  const adjustTextareaHeight = () => {
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-      inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
-    }
-  };
 
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [input]);
 
   return (
     <div className="flex h-full">
@@ -277,8 +269,8 @@ export default function Chat() {
         {/* Input */}
         <div className="border-t border-white/10 p-4 bg-gray-900">
           <form onSubmit={handleSubmit} className="flex gap-2">
-            <textarea
-              ref={inputRef}
+            <TextareaAutosize
+              ref={inputRef as any}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -288,8 +280,11 @@ export default function Chat() {
                 }
               }}
               placeholder="Share your thoughts..."
-              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-400 resize-none focus:outline-none focus:border-blue-500"
-              rows={1}
+              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              style={{ resize: 'none' }}
+              minRows={1}
+              maxRows={6}
+              cacheMeasurements
               disabled={isLoading || !encryptionKey}
             />
             <button

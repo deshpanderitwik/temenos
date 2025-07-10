@@ -531,8 +531,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       const lines = text.split('\n').filter(line => line.trim().length > 0);
       lines.forEach((line, index) => {
         if (index === 0) {
-          // Replace current content with first line
-          editor.commands.setContent(`<p>${line}</p>`, false);
+          // Insert first line at cursor position
+          editor.commands.insertContent(line);
         } else {
           // Add subsequent lines as new paragraphs
           editor.commands.enter();

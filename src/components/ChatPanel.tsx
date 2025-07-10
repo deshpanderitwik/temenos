@@ -17,7 +17,7 @@ const markdownComponents = {
   h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-100 mb-2 mt-3">{children}</h1>,
   h2: ({children}: any) => <h2 className="text-base font-bold text-gray-100 mb-2 mt-2">{children}</h2>,
   h3: ({children}: any) => <h3 className="text-xl font-bold text-gray-100 mb-1 mt-2">{children}</h3>,
-  p: ({children}: any) => <p className="text-gray-100 mb-6 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
+  p: ({children}: any) => <p className="text-gray-100 mb-6 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0 whitespace-pre-wrap">{children}</p>,
   strong: ({children}: any) => <strong className="font-bold text-gray-50">{children}</strong>,
   em: ({children}: any) => <em className="italic text-gray-200">{children}</em>,
   ul: ({children}: any) => (
@@ -52,7 +52,7 @@ const thinkingMarkdownComponents = {
   h1: ({children}: any) => <h1 className="text-lg font-bold text-gray-200 mb-2 mt-3">{children}</h1>,
   h2: ({children}: any) => <h2 className="text-base font-bold text-gray-200 mb-2 mt-2">{children}</h2>,
   h3: ({children}: any) => <h3 className="text-xl font-bold text-gray-200 mb-1 mt-2">{children}</h3>,
-  p: ({children}: any) => <p className="text-gray-300 text-sm mb-4 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0">{children}</p>,
+  p: ({children}: any) => <p className="text-gray-300 text-sm mb-4 leading-relaxed [&:last-child]:mb-0 [li>&]:mt-0 whitespace-pre-wrap">{children}</p>,
   strong: ({children}: any) => <strong className="font-bold text-gray-200">{children}</strong>,
   em: ({children}: any) => <em className="italic text-gray-300">{children}</em>,
   ul: ({children}: any) => (
@@ -131,15 +131,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
     },
   });
 
-  // Ultra-simplified textarea height adjustment
-  const adjustTextareaHeight = useCallback(() => {
-    // No longer needed with react-textarea-autosize
-  }, []);
 
-  // Height adjustment on input change only
-  useEffect(() => {
-    // No longer needed with react-textarea-autosize
-  }, [inputValue, adjustTextareaHeight]);
 
   // Scroll to top of the latest message
   const scrollToLatestMessage = useCallback(() => {
@@ -341,7 +333,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                 remarkPlugins={[remarkGfm]}
                 components={markdownComponents}
               >
-                {message.content}
+                {message.content.split('\n').join('\n\n')}
               </ReactMarkdown>
             )}
           </div>
@@ -394,16 +386,21 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   // Convert HTML to text while preserving paragraph breaks
                   selectedText = htmlContent
                     .replace(/<br\s*\/?>/gi, '\n') // Convert <br> tags to newlines
-                    .replace(/<\/p>/gi, '\n') // Convert closing </p> tags to newlines
+                    .replace(/<\/p>/gi, '\n\n') // Convert closing </p> tags to double newlines (paragraph breaks)
                     .replace(/<p[^>]*>/gi, '') // Remove opening <p> tags
                     .replace(/<[^>]*>/g, '') // Remove any other HTML tags
-                    .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
+                    .replace(/\n{3,}/g, '\n\n') // Normalize multiple newlines to double newlines
                     .trim();
                 }
                 
                 if (selectedText.length > 0 && onAddToNarrative) {
+                  console.log('Cmd+K: Selected text:', selectedText);
                   onAddToNarrative(selectedText);
                   // Don't clear selection - let user keep their selection
+                } else {
+                  console.log('Cmd+K: No text selected or onAddToNarrative not available');
+                  console.log('selectedText length:', selectedText.length);
+                  console.log('onAddToNarrative available:', !!onAddToNarrative);
                 }
               }
             }}
@@ -447,9 +444,10 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
-                  className="w-full text-white/95 resize-none focus:outline-none px-3 py-2 auto-expand-textarea"
+                  className="w-full text-white/95 focus:outline-none px-3 py-2"
                   style={{ 
-                    lineHeight: '1.5'
+                    lineHeight: '1.5',
+                    resize: 'none'
                   }}
                   disabled={isLoading}
                   minRows={2}

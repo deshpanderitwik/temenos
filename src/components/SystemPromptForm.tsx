@@ -81,7 +81,7 @@ export default function SystemPromptForm({ isOpen, onClose, onCreated, initialPr
       <label className="text-gray-300 text-sm mb-2" htmlFor="system-prompt-body">Prompt</label>
       <textarea
         id="system-prompt-body"
-        className={`mb-4 px-4 py-2 rounded bg-[#232323] border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] flex-1 resize-none ${loading || viewOnly ? 'text-white/60 cursor-not-allowed' : 'text-white'}`}
+        className={`mb-4 px-4 py-2 rounded bg-[#232323] border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] flex-1 ${loading || viewOnly ? 'text-white/60 cursor-not-allowed' : 'text-white'}`}
         value={body}
         onChange={e => setBody(e.target.value)}
         placeholder="Write the body of your prompt here"

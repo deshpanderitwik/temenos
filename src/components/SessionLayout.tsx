@@ -5,7 +5,7 @@ import NarrativePanel, { NarrativePanelRef } from './NarrativePanel';
 import ChatPanel from './ChatPanel';
 import ConversationList from './ConversationList';
 import NarrativesList from './NarrativesList';
-import BreathworkTimer, { BreathworkTimerRef } from './BreathworkTimer';
+import BreathworkTimer from './BreathworkTimer';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
 import SystemPromptsModal from './SystemPromptsModal';
 
@@ -46,14 +46,6 @@ export default function SessionLayout() {
   const [preloadedConversations, setPreloadedConversations] = useState<Array<{ id: string; title: string; created: string; lastModified: string; messageCount: number }>>([]);
   const [preloadedNarratives, setPreloadedNarratives] = useState<Array<{ id: string; title: string; created: string; lastModified: string; characterCount: number }>>([]);
   const [preloadedSystemPrompts, setPreloadedSystemPrompts] = useState<Array<{ id: string; title: string; body: string; created: string; lastModified: string }>>([]);
-  
-  // Breathwork timer state
-  const [breathworkIsFullScreen, setBreathworkIsFullScreen] = useState(false);
-  const breathworkTimerRef = useRef<BreathworkTimerRef | null>(null);
-  const [breathworkDisplayText, setBreathworkDisplayText] = useState<number | string>(0);
-  const [breathworkCurrentPhase, setBreathworkCurrentPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
-  const [breathworkCycleCount, setBreathworkCycleCount] = useState(0);
-  const breathworkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Narrative panel ref
   const narrativePanelRef = useRef<NarrativePanelRef>(null);
@@ -379,146 +371,12 @@ export default function SessionLayout() {
     }
   };
 
-  // Handle breathwork full-screen toggle
-  const handleBreathworkToggle = () => {
-    if (breathworkIsFullScreen) {
-      // Exiting full-screen mode
-      setBreathworkIsFullScreen(false);
-      setBreathworkDisplayText(0);
-      setBreathworkCurrentPhase('inhale');
-      setBreathworkCycleCount(0);
-      if (breathworkIntervalRef.current) {
-        clearInterval(breathworkIntervalRef.current);
-        breathworkIntervalRef.current = null;
-      }
-    } else {
-      // Entering full-screen mode
-      setBreathworkIsFullScreen(true);
-      setBreathworkDisplayText(0);
-      setBreathworkCurrentPhase('inhale');
-      setBreathworkCycleCount(0);
-      // Start the timer after a brief delay to ensure the component is mounted
-      setTimeout(() => {
-        startBreathworkTimer();
-      }, 100);
-    }
-  };
 
-  // Start breathwork timer
-  const startBreathworkTimer = () => {
-    let count = 0;
-    let holdCount = 0;
-    let currentPhase: 'inhale' | 'hold' | 'exhale' = 'inhale';
-    let cycleCount = 0;
-
-    breathworkIntervalRef.current = setInterval(() => {
-      if (currentPhase === 'inhale') {
-        count++;
-        if (count > 4) {
-          currentPhase = 'hold';
-          holdCount = 0;
-          setBreathworkCurrentPhase('hold');
-          setBreathworkDisplayText(holdCount);
-        } else {
-          setBreathworkDisplayText(count);
-        }
-      } else if (currentPhase === 'hold') {
-        holdCount++;
-        if (holdCount > 7) {
-          currentPhase = 'exhale';
-          count = 8;
-          setBreathworkCurrentPhase('exhale');
-          setBreathworkDisplayText(8);
-        } else {
-          setBreathworkDisplayText(holdCount);
-        }
-      } else if (currentPhase === 'exhale') {
-        if (count === 8) {
-          // First tick in exhale phase, show 8 then start counting down
-          count = 7;
-          setBreathworkDisplayText(7);
-        } else {
-          count--;
-          if (count < 0) {
-            // Complete cycle - increment cycle count
-            cycleCount++;
-            setBreathworkCycleCount(cycleCount);
-            
-            // Check if we've completed 10 cycles
-            if (cycleCount > 10) {
-              // Reset everything for next round
-              cycleCount = 1;
-              setBreathworkCycleCount(1);
-              count = 0;
-              holdCount = 0;
-              currentPhase = 'inhale';
-              setBreathworkCurrentPhase('inhale');
-              setBreathworkDisplayText(0);
-            } else {
-              // Continue to next cycle
-              currentPhase = 'inhale';
-              holdCount = 0;
-              count = 0;
-              setBreathworkCurrentPhase('inhale');
-              setBreathworkDisplayText(0);
-            }
-          } else {
-            setBreathworkDisplayText(count);
-          }
-        }
-      }
-    }, 1000);
-  };
-
-  // Cleanup breathwork timer on unmount
-  useEffect(() => {
-    return () => {
-      if (breathworkIntervalRef.current) {
-        clearInterval(breathworkIntervalRef.current);
-      }
-    };
-  }, []);
 
   const [systemPromptsOpen, setSystemPromptsOpen] = useState(false);
 
   return (
-    <>
-      {/* Full-screen Breathwork Timer Overlay */}
-      {breathworkIsFullScreen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-[9999] flex items-center justify-center">
-          <div className="text-center w-32">
-            <div className="text-8xl font-bold text-white mb-2 font-eczar">
-              {breathworkDisplayText}
-            </div>
-            <div className="text-2xl text-gray-300 mb-4">
-              {breathworkCurrentPhase === 'inhale' && 'Inhale'}
-              {breathworkCurrentPhase === 'hold' && 'Hold'}
-              {breathworkCurrentPhase === 'exhale' && 'Exhale'}
-            </div>
-            {/* Cycle dots */}
-            <div className="flex justify-center gap-1 mb-8">
-              {Array.from({ length: 10 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                    i < breathworkCycleCount 
-                      ? 'bg-white' 
-                      : 'bg-gray-600'
-                  }`}
-                />
-              ))}
-            </div>
-            <button
-              onClick={handleBreathworkToggle}
-              className="px-3 py-1 bg-red-600 text-white rounded-lg transition-all flex items-center gap-2 mx-auto opacity-50 hover:opacity-100 text-sm"
-            >
-              Stop
-            </button>
-          </div>
-        </div>
-      )}
-      
-      <div className="h-screen bg-[#141414] flex">
+    <div className="h-screen bg-[#141414] flex">
         {/* Draft/Main Toggle Switch - fixed at top left, 48px from edge */}
         {isUIVisible && (
           <div className="fixed top-0 left-0 pt-7 z-[100]" style={{ paddingLeft: '24px' }}>
@@ -573,20 +431,7 @@ export default function SessionLayout() {
                 </svg>
               </button>
               
-              <BreathworkTimer 
-                ref={breathworkTimerRef}
-                renderButton={() => (
-                  <button
-                    onClick={handleBreathworkToggle}
-                    className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
-                    title={breathworkIsFullScreen ? 'Exit full-screen breathwork' : 'Start full-screen breathwork timer'}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                    </svg>
-                  </button>
-                )}
-              />
+              <BreathworkTimer />
               
 
             </div>
@@ -683,6 +528,5 @@ export default function SessionLayout() {
           />
         )}
       </div>
-    </>
   );
 } 
