@@ -10,7 +10,7 @@ interface Narrative {
   id: string;
   title: string;
   content: string;
-  draftContent?: string; // Optional draft content stored at the bottom
+  draftContent?: string; // Optional main content stored at the bottom
   created: string;
   lastModified: string;
   characterCount: number;

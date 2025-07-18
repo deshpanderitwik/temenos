@@ -19,7 +19,8 @@ Temenos is a sacred container for Jungian healing work, powered by advanced lang
 
 3. Create a `.env.local` file in the root directory with the following content:
    ```
-   PERPLEXITY_API_KEY=your_api_key_here
+   PERPLEXITY_API_KEY=your_perplexity_api_key_here
+   XAI_API_KEY=your_xai_api_key_here
    ```
 
 4. Run the development server:
@@ -54,6 +55,7 @@ Returns:
 - TypeScript
 - Tailwind CSS
 - Perplexity API
+- xAI API (Grok 4)
 
 ## Security Note
 

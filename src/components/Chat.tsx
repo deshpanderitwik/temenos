@@ -33,7 +33,9 @@ export default function Chat() {
   // Available models
   const availableModels = [
     { id: 'r1-1776', name: 'R1-1776', description: 'Fast and efficient' },
-    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' }
+    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' },
+    { id: 'grok-3', name: 'Grok 3', description: 'xAI\'s powerful model' },
+    { id: 'grok-4-0709', name: 'Grok 4', description: 'xAI\'s latest model' }
   ];
 
   // Get encryption key from environment
@@ -240,7 +242,7 @@ export default function Chat() {
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 mt-8">
               <div className="text-6xl mb-4">🧘‍♀️</div>
-              <h2 className="text-xl font-semibold mb-2">Welcome to Temenos</h2>
+              <h2 className="text-xl font-surt-semibold mb-2">Welcome to Temenos</h2>
               <p className="text-gray-400">Begin your journey of self-discovery and healing.</p>
             </div>
           ) : (

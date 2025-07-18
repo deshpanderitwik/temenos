@@ -309,7 +309,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
       >
         {/* Message Header */}
         <div className="flex items-center justify-between mb-2 chat-message-header pl-4 pr-4">
-          <div className="text-sm font-medium text-gray-300">
+          <div className="text-sm font-surt-medium text-gray-300">
             {isAssistant ? 'AI' : 'You'}
           </div>
           <span className="text-sm text-gray-400">
@@ -345,7 +345,9 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
   // Memoized available models
   const availableModels = useMemo(() => [
     { id: 'r1-1776', name: 'R1-1776', description: 'Fast and efficient' },
-    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' }
+    { id: 'sonar-pro', name: 'Sonar Pro', description: 'Advanced reasoning' },
+    { id: 'grok-3', name: 'Grok 3', description: 'xAI\'s powerful model' },
+    { id: 'grok-4-0709', name: 'Grok 4', description: 'xAI\'s latest model' }
   ], []);
 
   // Memoized rendered messages
@@ -394,13 +396,8 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                 }
                 
                 if (selectedText.length > 0 && onAddToNarrative) {
-                  console.log('Cmd+K: Selected text:', selectedText);
                   onAddToNarrative(selectedText);
                   // Don't clear selection - let user keep their selection
-                } else {
-                  console.log('Cmd+K: No text selected or onAddToNarrative not available');
-                  console.log('selectedText length:', selectedText.length);
-                  console.log('onAddToNarrative available:', !!onAddToNarrative);
                 }
               }
             }}

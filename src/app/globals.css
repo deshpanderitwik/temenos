@@ -11,7 +11,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-work-sans);
   --font-mono: var(--font-geist-mono);
-  --font-dm-sans: var(--font-dm-sans);
+  --font-surt: var(--font-surt-regular);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -212,12 +212,19 @@ p:last-child {
 
 /* Hide scrollbar utility */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none !important;  /* Safari and Chrome */
+}
+
+/* Override global overflow-y-auto styles when scrollbar-hide is applied */
+.overflow-y-auto.scrollbar-hide {
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
+  padding-right: 0 !important;
 }
 
 /* Ensure text selection works properly in chat messages */
@@ -231,14 +238,14 @@ p:last-child {
   -ms-user-select: text !important;
 }
 
-/* Chat pane font styling with DM Sans */
+/* Chat pane font styling with Surt */
 .chat-message,
 .chat-message *,
 .chat-message-content,
 .chat-message-content *,
 .messages-container,
 .messages-container * {
-  font-family: var(--font-dm-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-surt-regular), 'Surt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Prevent text selection during resize */
@@ -398,6 +405,23 @@ summary {
   contain: none; /* Remove contain to prevent selection issues */
 }
 
+/* Override Tailwind text classes in chat messages */
+.chat-message-content .text-lg {
+  font-size: 16px !important; /* Reduced from 18px */
+}
+
+.chat-message-content .text-base {
+  font-size: 14px !important; /* Reduced from 16px */
+}
+
+.chat-message-content .text-sm {
+  font-size: 12px !important; /* Reduced from 14px */
+}
+
+.chat-message-content .text-xs {
+  font-size: 10px !important; /* Reduced from 12px */
+}
+
 /* Message border animations */
 .chat-message-content {
   transition: border-color 0.2s ease-in-out;
@@ -456,12 +480,12 @@ summary {
   position: relative;
 }
 
-/* Draft mode specific styles */
+/* Main mode specific styles */
 
 .narrative-editor .ProseMirror p {
   margin-bottom: 1.5rem; /* 24px equivalent */
   color: #f3f4f6;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.7;
   text-align: justify;
   hyphens: auto;
@@ -548,7 +572,7 @@ summary {
 
 /* Immersive narrative typography */
 .narrative-editor {
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;
@@ -576,10 +600,10 @@ summary {
 }
 
 .narrative-editor .ProseMirror {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 27px;
   color: #e5e7eb;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
   outline: none;
   transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -605,7 +629,7 @@ summary {
   margin-top: 2rem;
   margin-bottom: 1rem;
   color: #f3f4f6;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-display-regular), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror h1 {
@@ -613,6 +637,7 @@ summary {
   border-bottom: 2px solid #4b5563;
   padding-bottom: 0.5rem;
   font-weight: 700;
+  font-family: var(--font-joly-display-bold), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror h2 {
@@ -620,6 +645,7 @@ summary {
   border-bottom: 1px solid #4b5563;
   padding-bottom: 0.25rem;
   font-weight: 600;
+  font-family: var(--font-joly-display-medium), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror blockquote {
@@ -628,30 +654,30 @@ summary {
   margin: 1.5rem 0;
   font-style: italic;
   color: #d1d5db;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror ul,
 .narrative-editor .ProseMirror ol {
   margin: 1.5rem 0;
   padding-left: 2rem;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror li {
   margin-bottom: 0.5rem;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror strong {
   color: #f9fafb;
   font-weight: 600;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-bold), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror em {
   color: #d1d5db;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
 }
 
 .narrative-editor .ProseMirror code {
@@ -696,10 +722,10 @@ summary {
   height: 0;
   pointer-events: none;
   font-style: italic;
-  font-family: var(--font-eczar), 'Georgia', 'Times New Roman', serif;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
 }
 
-/* Enhanced typography for better readability with Eczar */
+/* Enhanced typography for better readability with Joly */
 .narrative-editor .ProseMirror {
   font-feature-settings: "liga" 1, "kern" 1;
   text-rendering: optimizeLegibility;
@@ -823,11 +849,11 @@ summary {
 
 /* Additional rules to handle marked library output and ensure tight spacing */
 .chat-message-content .prose {
-  line-height: 1.5 !important;
+  line-height: 1.6 !important;
 }
 
 .chat-message-content .prose p {
-  line-height: 1.5 !important;
+  line-height: 1.6 !important;
 }
 
 /* Handle potential extra whitespace from marked library */
@@ -853,7 +879,7 @@ summary {
 
 /* Ensure consistent spacing for all text elements */
 .chat-message-content .prose * {
-  line-height: 1.5 !important;
+  line-height: 1.6 !important;
 }
 
 /* Override any potential spacing from Tailwind Typography defaults */
@@ -1215,13 +1241,60 @@ summary {
   display: block;
 }
 
+/* ApocSans font utility class */
+.font-apoc-sans {
+  font-family: var(--font-apoc-sans), sans-serif;
+}
+
+/* Joly font utility classes */
+.font-joly-text-regular {
+  font-family: var(--font-joly-text-regular), serif;
+}
+
+.font-joly-text-medium {
+  font-family: var(--font-joly-text-medium), serif;
+}
+
+.font-joly-text-bold {
+  font-family: var(--font-joly-text-bold), serif;
+}
+
+.font-joly-display-regular {
+  font-family: var(--font-joly-display-regular), serif;
+}
+
+.font-joly-display-medium {
+  font-family: var(--font-joly-display-medium), serif;
+}
+
+.font-joly-display-bold {
+  font-family: var(--font-joly-display-bold), serif;
+}
+
+/* Surt font utility classes */
+.font-surt-regular {
+  font-family: var(--font-surt-regular), sans-serif;
+}
+
+.font-surt-medium {
+  font-family: var(--font-surt-medium), sans-serif;
+}
+
+.font-surt-bold {
+  font-family: var(--font-surt-bold), sans-serif;
+}
+
+.font-surt-semibold {
+  font-family: var(--font-surt-semibold), sans-serif;
+}
+
 /* Custom slider styles for breathwork settings */
 .slider::-webkit-slider-thumb {
   appearance: none;
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #9ca3af;
   cursor: pointer;
   border: none;
 }
@@ -1230,9 +1303,30 @@ summary {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #9ca3af;
   cursor: pointer;
   border: none;
+}
+
+/* Placeholder text styling for inputs and textareas */
+::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+::-webkit-input-placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+::-moz-placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+:-ms-input-placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
 }
 
 

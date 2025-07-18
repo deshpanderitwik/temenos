@@ -10,7 +10,7 @@ interface Narrative {
   id: string;
   title: string;
   content: string;
-  draftContent?: string; // Optional draft content stored at the bottom
+  draftContent?: string; // Optional main content stored at the bottom
   created: string;
   lastModified: string;
   characterCount: number;
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     let createdDate = now;
     let existingDraftContent = '';
     
-    // If updating existing narrative, preserve the created date and existing draft content
+    // If updating existing narrative, preserve the created date and existing main content
     if (id) {
       try {
         const existingFilePath = path.join(NARRATIVES_DIR, `${id}.enc`);
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       }
     }
     
-    // Use provided draft content or preserve existing
+    // Use provided main content or preserve existing
     const finalDraftContent = draftContent !== undefined ? draftContent : existingDraftContent;
     
     const narrative: Narrative = {

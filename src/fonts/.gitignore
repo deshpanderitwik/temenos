@@ -1,0 +1,42 @@
+# Ignore unused font files
+# Keep only the fonts that are actually loaded in layout.tsx
+
+# Surt fonts - keep only Regular, Medium, Bold, Semibold
+Surt-Normal-Black-Italic.otf
+Surt-Normal-Black.otf
+Surt-Normal-Extrabold-Italic.otf
+Surt-Normal-Extrabold.otf
+Surt-Normal-Bold-Italic.otf
+Surt-Normal-Extralight-Italic.otf
+Surt-Normal-Extralight.otf
+Surt-Normal-Light.otf
+Surt-Normal-Medium-Italic.otf
+Surt-Normal-Regular-Italic.otf
+Surt-Normal-Semibold-Italic.otf
+Surt-Normal-Ultrabold-Italic.otf
+Surt-Normal-Ultrabold.otf
+Surt-Normal-Light-Italic.otf
+Surt-Normal-Thin-Italic.otf
+Surt-Normal-Thin.otf
+
+# Joly fonts - keep only specific variants used in layout.tsx
+JolyText-Black.otf
+JolyText-BlackItalic.otf
+JolyText-BoldItalic.otf
+JolyText-MediumItalic.otf
+JolyText-RegularItalic.otf
+JolyDisplay-Black.otf
+JolyDisplay-BlackItalic.otf
+JolyDisplay-BoldItalic.otf
+JolyDisplay-MediumItalic.otf
+JolyDisplay-RegularItalic.otf
+JolyHeadline-Black.otf
+JolyHeadline-Bold.otf
+JolyHeadline-Medium.otf
+JolyHeadline-Regular.otf
+JolyHeadline-BoldItalic.otf
+JolyHeadline-MediumItalic.otf
+JolyHeadline-RegularItalic.otf
+
+# System files
+.DS_Store 

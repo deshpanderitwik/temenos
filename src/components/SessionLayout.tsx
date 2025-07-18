@@ -40,7 +40,31 @@ export default function SessionLayout() {
     title: 'Temenos Guide',
     body: DEFAULT_SYSTEM_PROMPT,
   });
-  const [selectedModel, setSelectedModel] = useState('r1-1776');
+
+  // Wrapper function to save system prompt to localStorage when it changes
+  const handleSystemPromptChange = (prompt: { title: string; body: string }) => {
+    setSystemPrompt(prompt);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('temenos-selected-system-prompt-title', prompt.title);
+      localStorage.setItem('temenos-selected-system-prompt-body', prompt.body);
+    }
+  };
+  const [selectedModel, setSelectedModel] = useState(() => {
+    // Load saved model from localStorage on component mount
+    if (typeof window !== 'undefined') {
+      const savedModel = localStorage.getItem('temenos-selected-model');
+      return savedModel || 'r1-1776';
+    }
+    return 'r1-1776';
+  });
+
+  // Wrapper function to save model to localStorage when it changes
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('temenos-selected-model', model);
+    }
+  };
   
   // Preloaded data state
   const [preloadedConversations, setPreloadedConversations] = useState<Array<{ id: string; title: string; created: string; lastModified: string; messageCount: number }>>([]);
@@ -51,15 +75,18 @@ export default function SessionLayout() {
   const narrativePanelRef = useRef<NarrativePanelRef>(null);
 
   // DRAFT/MAIN toggle state
-  const [isDraftMode, setIsDraftMode] = useState(false);
+  const [isDraftMode, setIsDraftMode] = useState(true);
   
+  // Breathwork timer full-screen state
+  const [isBreathworkFullScreen, setIsBreathworkFullScreen] = useState(false);
+
   // UI visibility state for cmd + . shortcut
   const [isUIVisible, setIsUIVisible] = useState(true);
 
   // Keyboard shortcut handler for cmd + j to toggle draft/main mode and cmd + . to hide/show UI
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      // Cmd+J (Mac) or Ctrl+J (Windows/Linux) to toggle draft/main mode
+              // Cmd+J (Mac) or Ctrl+J (Windows/Linux) to toggle draft/main mode
       if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
         e.preventDefault();
         
@@ -154,7 +181,8 @@ export default function SessionLayout() {
           created: now,
           lastModified: now,
         };
-        setPreloadedSystemPrompts([defaultPrompt, ...(data.prompts || [])]);
+        // Put default prompt at the bottom, other prompts at the top (already sorted by newest first)
+        setPreloadedSystemPrompts([...(data.prompts || []), defaultPrompt]);
       } else {
         const now = new Date().toISOString();
         const defaultPrompt = {
@@ -194,6 +222,21 @@ export default function SessionLayout() {
     };
     
     loadLatestItems();
+  }, []);
+
+  // Load saved system prompt after component mounts (to avoid hydration mismatch)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedPromptTitle = localStorage.getItem('temenos-selected-system-prompt-title');
+      const savedPromptBody = localStorage.getItem('temenos-selected-system-prompt-body');
+      
+      if (savedPromptTitle && savedPromptBody) {
+        setSystemPrompt({
+          title: savedPromptTitle,
+          body: savedPromptBody,
+        });
+      }
+    }
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -339,11 +382,11 @@ export default function SessionLayout() {
     }
   };
 
-  // Add text to the current narrative (modified to check draft mode)
+  // Add text to the current narrative (modified to check current mode)
   const handleAddToNarrative = (text: string) => {
     if (narrativePanelRef.current) {
       // Use the narrative panel's addTextToContent function which automatically
-      // adds to the correct section based on current draft mode
+      // adds to the correct section based on current mode
       narrativePanelRef.current.addTextToContent(text);
     } else {
       // Fallback to old behavior if ref is not available
@@ -377,22 +420,22 @@ export default function SessionLayout() {
 
   return (
     <div className="h-screen bg-[#141414] flex">
-        {/* Draft/Main Toggle Switch - fixed at top left, 48px from edge */}
-        {isUIVisible && (
-          <div className="fixed top-0 left-0 pt-7 z-[100]" style={{ paddingLeft: '24px' }}>
+        {/* Main/Draft Toggle Switch - absolute positioned to move with layout */}
+        {isUIVisible && !isBreathworkFullScreen && (
+          <div className="absolute top-0 left-0 pt-6 z-[100]" style={{ paddingLeft: '24px' }}>
             <div className="w-16 flex items-center justify-center">
               <button
-                className={`w-10 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${isDraftMode ? 'bg-yellow-600' : 'bg-white/10'}`}
+                className={`w-10 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${!isDraftMode ? 'bg-green-600' : 'bg-white/10'}`}
                 onClick={async () => {
                   // Use the simplified mode switch function
                   if (narrativePanelRef.current) {
                     await narrativePanelRef.current.handleModeSwitch();
                   }
                 }}
-                title={isDraftMode ? 'Switch to Main Narrative (⌘+J)' : 'Switch to Draft (⌘+J)'}
+                title={!isDraftMode ? 'Switch to Draft (⌘+J)' : 'Switch to Main Narrative (⌘+J)'}
               >
                 <span
-                  className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${isDraftMode ? 'translate-x-4' : 'translate-x-0'}`}
+                  className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${!isDraftMode ? 'translate-x-4' : 'translate-x-1'}`}
                 />
               </button>
             </div>
@@ -431,7 +474,7 @@ export default function SessionLayout() {
                 </svg>
               </button>
               
-              <BreathworkTimer />
+              <BreathworkTimer onFullScreenChange={setIsBreathworkFullScreen} />
               
 
             </div>
@@ -482,9 +525,9 @@ export default function SessionLayout() {
                 onConversationUpdate={handleConversationUpdate}
                 onAddToNarrative={handleAddToNarrative}
                 systemPrompt={systemPrompt.body}
-                onSystemPromptChange={body => setSystemPrompt(sp => ({ ...sp, body }))}
+                onSystemPromptChange={body => handleSystemPromptChange({ ...systemPrompt, body })}
                 selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
+                onModelChange={handleModelChange}
                 onOpenSystemPrompts={() => setSystemPromptsOpen(true)}
                 systemPromptTitle={systemPrompt.title}
                 onOpenConversations={() => setIsSidebarOpen(true)}
@@ -523,7 +566,7 @@ export default function SessionLayout() {
             isOpen={systemPromptsOpen}
             onClose={() => setSystemPromptsOpen(false)}
             activePrompt={systemPrompt}
-            setActivePrompt={setSystemPrompt}
+            setActivePrompt={handleSystemPromptChange}
             preloadedPrompts={preloadedSystemPrompts}
           />
         )}

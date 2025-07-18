@@ -65,7 +65,7 @@ export default function SystemPromptForm({ isOpen, onClose, onCreated, initialPr
       onSubmit={handleSubmit}
       onClick={e => e.stopPropagation()}
     >
-      <h2 className="text-white text-2xl font-semibold mb-6">{viewOnly ? 'View Default System Prompt' : initialPrompt ? 'Edit System Prompt' : 'New System Prompt'}</h2>
+
       <label className="text-gray-300 text-sm mb-2" htmlFor="system-prompt-title">Title</label>
       <input
         id="system-prompt-title"
@@ -77,11 +77,15 @@ export default function SystemPromptForm({ isOpen, onClose, onCreated, initialPr
         required
         disabled={loading || viewOnly}
         maxLength={100}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck="false"
       />
       <label className="text-gray-300 text-sm mb-2" htmlFor="system-prompt-body">Prompt</label>
       <textarea
         id="system-prompt-body"
-        className={`mb-4 px-4 py-2 rounded bg-[#232323] border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] flex-1 ${loading || viewOnly ? 'text-white/60 cursor-not-allowed' : 'text-white'}`}
+        className={`mb-4 px-4 py-2 rounded bg-[#232323] border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] flex-1 resize-none ${loading || viewOnly ? 'text-white/60 cursor-not-allowed' : 'text-white'}`}
         value={body}
         onChange={e => setBody(e.target.value)}
         placeholder="Write the body of your prompt here"
@@ -93,7 +97,7 @@ export default function SystemPromptForm({ isOpen, onClose, onCreated, initialPr
       <div className="flex justify-end gap-3 mt-2">
         <button
           type="button"
-          className={`px-5 py-2 rounded-full transition-colors text-base font-medium shadow-none ${loading ? 'text-white/60 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20'}`}
+          className={`px-5 py-2 rounded-full transition-colors text-base font-surt-medium shadow-none ${loading ? 'text-white/60 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20'}`}
           onClick={onClose}
           disabled={loading}
         >
@@ -101,7 +105,7 @@ export default function SystemPromptForm({ isOpen, onClose, onCreated, initialPr
         </button>
         <button
           type="submit"
-          className={`px-5 py-2 rounded-full transition-colors text-base font-medium shadow-none disabled:opacity-60 ${loading || viewOnly ? 'bg-white/20 text-white/60 cursor-not-allowed' : 'bg-white/20 text-white hover:bg-white/30'}`}
+          className={`px-5 py-2 rounded-full transition-colors text-base font-surt-medium shadow-none disabled:opacity-60 ${loading || viewOnly ? 'bg-white/20 text-white/60 cursor-not-allowed' : 'bg-white/20 text-white hover:bg-white/30'}`}
           disabled={loading || viewOnly}
         >
           Save Prompt

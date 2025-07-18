@@ -20,6 +20,7 @@ interface SystemPromptsListProps {
   onEditPrompt?: (prompt: SystemPrompt, viewOnly?: boolean) => void;
   isInsideModal?: boolean;
   preloadedPrompts?: Array<{ id: string; title: string; body: string; created: string; lastModified: string }>;
+  refreshKey?: number;
 }
 
 export default function SystemPromptsList({
@@ -32,13 +33,17 @@ export default function SystemPromptsList({
   onEditPrompt,
   isInsideModal = false,
   preloadedPrompts,
+  refreshKey = 0,
 }: SystemPromptsListProps) {
   const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      if (preloadedPrompts && preloadedPrompts.length > 0) {
-        // Use preloaded data if available
+      // Always make a fresh API call when refreshKey changes to get the latest data
+      if (refreshKey > 0) {
+        loadPrompts();
+      } else if (preloadedPrompts && preloadedPrompts.length > 0) {
+        // Use preloaded data if available and no refresh is needed
         setPrompts(preloadedPrompts);
       } else {
         // Fallback to API call if no preloaded data
@@ -48,7 +53,7 @@ export default function SystemPromptsList({
       // Reset state when modal closes
       setPrompts([]);
     }
-  }, [isOpen, preloadedPrompts]);
+  }, [isOpen, preloadedPrompts, refreshKey]);
 
   const loadPrompts = async () => {
     try {
@@ -63,7 +68,8 @@ export default function SystemPromptsList({
         lastModified: now,
       };
       if (data.prompts) {
-        setPrompts([defaultPrompt, ...data.prompts]);
+        // Put default prompt at the bottom, other prompts at the top (already sorted by newest first)
+        setPrompts([...data.prompts, defaultPrompt]);
       } else {
         setPrompts([defaultPrompt]);
       }
@@ -144,7 +150,7 @@ export default function SystemPromptsList({
       <div className="flex justify-center px-4 pt-6 pb-4">
         <button
           onClick={onNewPrompt}
-          className="px-5 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-medium shadow-none"
+          className="px-5 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
         >
           + New System Prompt
         </button>

@@ -54,7 +54,7 @@ export interface NarrativePanelRef {
 // Consolidated narrative state interface
 interface NarrativeState {
   id: string | null;
-  title: string; // Independent of mode changes - same in both draft and main modes
+  title: string; // Independent of mode changes - same in both main and draft modes
   mainContent: string;
   draftContent: string;
   lastSaved: Date | null;
@@ -122,8 +122,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         setNarrativeState(prev => ({
           ...prev,
           ...(isDraftMode 
-            ? { draftContent: content }
-            : { mainContent: content }
+            ? { mainContent: content }
+            : { draftContent: content }
           ),
           hasUnsavedChanges: true
         }));
@@ -221,8 +221,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       const titleToSave = narrativeState.title || 'New Narrative';
       
       // Determine what to save based on current mode
-      const contentToSave = isDraftMode ? narrativeState.mainContent : content;
-      const draftContentToSave = isDraftMode ? content : narrativeState.draftContent;
+      const contentToSave = isDraftMode ? content : narrativeState.mainContent;
+      const draftContentToSave = isDraftMode ? narrativeState.draftContent : content;
       
       // Skip save if content is empty (but always save title)
       if (!contentToSave || contentToSave.trim() === '' || contentToSave === '<p></p>') {
@@ -300,7 +300,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     }
   }, [isSaving, narrativeState, isDraftMode, onSave]);
 
-  // Unified save function - handles both main and draft content
+  // Unified save function - handles both draft and main content
   const saveNarrative = useCallback(async (content?: string) => {
     if (isSaving) return;
     
@@ -312,8 +312,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       const titleToSave = narrativeState.title || 'New Narrative';
       
       // Determine what to save based on current mode
-      const contentToSave = isDraftMode ? narrativeState.mainContent : currentContent;
-      const draftContentToSave = isDraftMode ? currentContent : narrativeState.draftContent;
+      const contentToSave = isDraftMode ? currentContent : narrativeState.mainContent;
+      const draftContentToSave = isDraftMode ? narrativeState.draftContent : currentContent;
       
       // Skip save if content is empty (but always save title)
       if (!contentToSave || contentToSave.trim() === '' || contentToSave === '<p></p>') {
@@ -484,8 +484,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     if (currentNarrative && editor && !isAutoSavingRef.current) {
       // Load the appropriate content into the editor based on current mode
       const contentToLoad = isDraftMode 
-        ? currentNarrative.draftContent || '<p></p>'
-        : currentNarrative.content || '<p></p>';
+        ? currentNarrative.content || '<p></p>'
+        : currentNarrative.draftContent || '<p></p>';
       
       // Only update editor content if it's actually different from current content
       // This prevents losing user input when auto-save triggers a re-render
@@ -519,7 +519,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     }
   }, [currentNarrative, editor, isDraftMode]);
 
-  // Function to add text to the appropriate content (main or draft)
+  // Function to add text to the appropriate content (draft or main)
   const addTextToContent = useCallback((text: string) => {
     if (!editor) return;
     
@@ -548,8 +548,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     setNarrativeState(prev => ({
       ...prev,
       ...(isDraftMode 
-        ? { draftContent: editor.getHTML() }
-        : { mainContent: editor.getHTML() }
+        ? { mainContent: editor.getHTML() }
+        : { draftContent: editor.getHTML() }
       ),
       hasUnsavedChanges: true
     }));
@@ -574,8 +574,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     
     // Load the appropriate content for the new mode (title remains unchanged)
     const contentToLoad = newMode 
-      ? narrativeState.draftContent || '<p></p>'
-      : narrativeState.mainContent || '<p></p>';
+      ? narrativeState.mainContent || '<p></p>'
+      : narrativeState.draftContent || '<p></p>';
     
     // Use setContent with preserveWhitespace to maintain history better
     editor.commands.setContent(contentToLoad, false);
@@ -593,11 +593,11 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       {/* Title and Editor Content grouped for unified nudge */}
       <div className="narrative-content-wrapper pt-6 pl-4 h-full flex flex-col">
         <div className="w-[664px] mx-auto">
-          {/* Title is independent of mode changes - remains the same in both draft and main modes */}
+          {/* Title is independent of mode changes - remains the same in both main and draft modes */}
           <div className="relative">
             <input
               type="text"
-              className="narrative-title text-xl font-semibold text-white outline-none border-none bg-transparent w-full transition-all duration-200 px-6"
+                              className="narrative-title text-2xl font-surt-semibold text-white outline-none border-none bg-transparent w-full transition-all duration-200 px-6"
               value={narrativeState.title}
               onChange={e => {
                 const newTitle = e.target.value;
@@ -652,7 +652,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
               }}
               placeholder="New Narrative"
               style={{ 
-                fontFamily: 'var(--font-eczar), Georgia, "Times New Roman", serif',
+                fontFamily: 'var(--font-joly-headline-black-italic), serif',
                 minHeight: '1.5rem',
                 opacity: titleOpacity,
                 transition: 'opacity 0.3s ease-out',

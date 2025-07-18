@@ -107,7 +107,11 @@ async function initializePrompts() {
 // GET /api/system-prompts - List all system prompts
 export async function GET() {
   await initializePrompts();
-  return NextResponse.json({ prompts });
+  // Sort prompts by lastModified date (newest first)
+  const sortedPrompts = [...prompts].sort((a, b) => 
+    new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+  );
+  return NextResponse.json({ prompts: sortedPrompts });
 }
 
 // POST /api/system-prompts - Create or update system prompt

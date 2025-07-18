@@ -13,15 +13,9 @@ export async function POST(request: Request) {
   try {
     // Get the API keys from environment variables
     const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
+    const XAI_API_KEY = process.env.XAI_API_KEY;
     const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_CLIENT_ENCRYPTION_KEY;
     
-    if (!PERPLEXITY_API_KEY) {
-      return NextResponse.json(
-        { error: 'Perplexity API key not configured' },
-        { status: 500 }
-      );
-    }
-
     if (!ENCRYPTION_KEY) {
       return NextResponse.json(
         { error: 'Encryption key not configured' },
@@ -31,6 +25,27 @@ export async function POST(request: Request) {
 
     // Parse the request body
     const body: HealingRequest = await request.json();
+    
+    // Use the provided model or default to r1-1776
+    const modelToUse = body.model || 'r1-1776';
+    
+    // Check if we need xAI API key for Grok models
+    if (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') {
+      if (!XAI_API_KEY) {
+        return NextResponse.json(
+          { error: 'xAI API key not configured' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // For Perplexity models
+      if (!PERPLEXITY_API_KEY) {
+        return NextResponse.json(
+          { error: 'Perplexity API key not configured' },
+          { status: 500 }
+        );
+      }
+    }
     
     if (!body.prompt) {
       return NextResponse.json(
@@ -131,29 +146,57 @@ export async function POST(request: Request) {
           : msg.content
       }));
 
-      // Use the provided model or default to r1-1776
-      const modelToUse = body.model || 'r1-1776';
+      // Call the appropriate API based on the selected model
+      let response;
+      const apiStartTime = Date.now();
       
-      // Call Perplexity API with decrypted data
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: modelToUse,
-          messages,
-          max_tokens: 10000,
-          temperature: 0.6   // Slightly creative but focused responses
-        })
-      });
+      if (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') {
+        // Call xAI API for Grok models
+        console.log(`[xAI API] Sending request to ${modelToUse} at ${new Date().toISOString()}`);
+        response = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${XAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages,
+            stream: false,
+            temperature: 0.6
+          })
+        });
+        const apiEndTime = Date.now();
+        const apiDuration = apiEndTime - apiStartTime;
+        console.log(`[xAI API] Response received from ${modelToUse} in ${apiDuration}ms at ${new Date().toISOString()}`);
+      } else {
+        // Call Perplexity API for other models
+        console.log(`[Perplexity API] Sending request to ${modelToUse} at ${new Date().toISOString()}`);
+        response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages,
+            max_tokens: 10000,
+            temperature: 0.6   // Slightly creative but focused responses
+          })
+        });
+        const apiEndTime = Date.now();
+        const apiDuration = apiEndTime - apiStartTime;
+        console.log(`[Perplexity API] Response received from ${modelToUse} in ${apiDuration}ms at ${new Date().toISOString()}`);
+      }
 
       if (!response.ok) {
         const error = await response.text();
+        const apiName = (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') ? 'xAI' : 'Perplexity';
         return NextResponse.json(
-          { error: `Perplexity API error: ${error}` },
+          { error: `${apiName} API error: ${error}` },
           { status: response.status }
         );
       }
