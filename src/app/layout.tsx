@@ -9,6 +9,12 @@ const apocSans = localFont({
   display: "swap",
 });
 
+const apocRevelationsUltraBold = localFont({
+  src: "../fonts/ApocRevelations-UltraBold.otf",
+  variable: "--font-apoc-revelations-ultrabold",
+  display: "swap",
+});
+
 const jolyTextRegular = localFont({
   src: "../fonts/JolyText-Regular.otf",
   variable: "--font-joly-text-regular",
@@ -48,6 +54,12 @@ const jolyDisplayBold = localFont({
 const jolyHeadlineBlackItalic = localFont({
   src: "../fonts/JolyHeadline-BlackItalic.otf",
   variable: "--font-joly-headline-black-italic",
+  display: "swap",
+});
+
+const jolyHeadlineBlack = localFont({
+  src: "../fonts/JolyHeadline-Black.otf",
+  variable: "--font-joly-headline-black",
   display: "swap",
 });
 
@@ -100,7 +112,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${workSans.variable} ${geistMono.variable} ${apocSans.variable} ${jolyTextRegular.variable} ${jolyTextMedium.variable} ${jolyTextBold.variable} ${jolyDisplayRegular.variable} ${jolyDisplayMedium.variable} ${jolyDisplayBold.variable} ${jolyHeadlineBlackItalic.variable} ${surtRegular.variable} ${surtMedium.variable} ${surtBold.variable} ${surtSemibold.variable} antialiased`}
+        className={`${workSans.variable} ${geistMono.variable} ${apocSans.variable} ${apocRevelationsUltraBold.variable} ${jolyTextRegular.variable} ${jolyTextMedium.variable} ${jolyTextBold.variable} ${jolyDisplayRegular.variable} ${jolyDisplayMedium.variable} ${jolyDisplayBold.variable} ${jolyHeadlineBlackItalic.variable} ${jolyHeadlineBlack.variable} ${surtRegular.variable} ${surtMedium.variable} ${surtBold.variable} ${surtSemibold.variable} antialiased`}
       >
         {children}
       </body>

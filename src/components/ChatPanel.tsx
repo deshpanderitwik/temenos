@@ -441,7 +441,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
-                  className="w-full text-white/95 focus:outline-none px-3 py-2"
+                  className="w-full text-white/95 focus:outline-none px-3 py-2 font-surt-medium"
                   style={{ 
                     lineHeight: '1.5',
                     resize: 'none'
@@ -449,7 +449,6 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   disabled={isLoading}
                   minRows={2}
                   maxRows={10}
-                  cacheMeasurements
                 />
               </div>
             </div>
@@ -458,7 +457,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   <select
                     value={selectedModel}
                     onChange={(e) => onModelChange?.(e.target.value)}
-                    className="px-3 py-1 text-xs bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
+                    className="px-3 py-1 text-xs font-surt-medium bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
                     style={{
                       backgroundImage: 'none',
                       paddingRight: '12px',
@@ -467,7 +466,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                     disabled={isLoading}
                   >
                     {availableModels.map((model) => (
-                      <option key={model.id} value={model.id} className="bg-gray-800 text-white text-center">
+                      <option key={model.id} value={model.id} className="bg-gray-800 text-white text-center font-surt-medium">
                         {model.name}
                       </option>
                     ))}
@@ -475,7 +474,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                 </div>
                 <div className="flex items-center gap-2">
                   {systemPromptTitle && (
-                    <span className="mr-1 text-xs text-white/60 max-w-[120px] truncate align-middle" title={systemPromptTitle}>
+                    <span className="mr-1 text-xs font-surt-medium text-white/60 max-w-[120px] truncate align-middle" title={systemPromptTitle}>
                       {systemPromptTitle}
                     </span>
                   )}

@@ -422,7 +422,7 @@ export default function SessionLayout() {
     <div className="h-screen bg-[#141414] flex">
         {/* Main/Draft Toggle Switch - absolute positioned to move with layout */}
         {isUIVisible && !isBreathworkFullScreen && (
-          <div className="absolute top-0 left-0 pt-6 z-[100]" style={{ paddingLeft: '24px' }}>
+          <div className="absolute top-0 left-0 pt-7 z-[100]" style={{ paddingLeft: '24px' }}>
             <div className="w-16 flex items-center justify-center">
               <button
                 className={`w-10 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${!isDraftMode ? 'bg-green-600' : 'bg-white/10'}`}

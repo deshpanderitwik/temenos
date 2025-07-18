@@ -68,11 +68,11 @@ export default function ItemListBrowser<T>({
                         ? 'bg-[rgba(255,255,255,0.1)] rounded-[12px]' : 'hover:bg-white/5 hover:rounded-[12px]'
                     }`}
                   >
-                    <div className="truncate text-white text-base">
+                    <div className="truncate text-white text-base font-surt-medium">
                       {renderItemTitle(item)}
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-gray-400 text-sm">
+                      <span className="text-gray-400 text-sm font-surt-medium">
                         {renderItemDate(item)}
                       </span>
                       {renderItemActions && renderItemActions(item)}

@@ -175,16 +175,16 @@ export default function SystemPromptsList({
                         ? 'bg-[rgba(255,255,255,0.1)] rounded-[12px]' : 'hover:bg-white/5 hover:rounded-[12px]'
                     }`}
                   >
-                    <div className="truncate text-white text-base">
+                    <div className="truncate text-white text-base font-surt-medium">
                       <span className="flex items-center gap-2">
                         {item.title}
                         {item.id === 'default' && (
-                          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10 text-white/70 border border-white/20 flex items-center">Default</span>
+                          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10 text-white/70 border border-white/20 flex items-center font-surt-medium">Default</span>
                         )}
                       </span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-gray-400 text-sm">
+                      <span className="text-gray-400 text-sm font-surt-medium">
                         {(() => {
                           const date = new Date(item.lastModified);
                           const month = (date.getMonth() + 1).toString().padStart(2, '0');

@@ -147,6 +147,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         // Custom keyboard shortcuts for the narrative editor
         const { state, dispatch } = view;
         
+        // Tab key - insert tab character instead of moving focus
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          editor?.commands.insertContent('\t');
+          return true;
+        }
+        
         // Cmd+S (Mac) or Ctrl+S (Windows/Linux) to save
         if ((event.metaKey || event.ctrlKey) && event.key === 's') {
           event.preventDefault();
@@ -652,7 +659,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
               }}
               placeholder="New Narrative"
               style={{ 
-                fontFamily: 'var(--font-joly-headline-black-italic), serif',
+                fontFamily: 'var(--font-apoc-revelations-ultrabold), serif',
                 minHeight: '1.5rem',
                 opacity: titleOpacity,
                 transition: 'opacity 0.3s ease-out',

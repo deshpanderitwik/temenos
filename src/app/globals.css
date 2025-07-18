@@ -483,7 +483,8 @@ summary {
 /* Main mode specific styles */
 
 .narrative-editor .ProseMirror p {
-  margin-bottom: 1.5rem; /* 24px equivalent */
+  margin-top: 0 !important; /* Override Tailwind Typography */
+  margin-bottom: 0 !important; /* No spacing between paragraphs */
   color: #f3f4f6;
   font-size: 20px;
   line-height: 1.7;
@@ -609,7 +610,8 @@ summary {
 }
 
 .narrative-editor .ProseMirror p {
-  margin-bottom: 1.5rem; /* 24px equivalent */
+  margin-top: 0 !important; /* Override Tailwind Typography */
+  margin-bottom: 0 !important; /* No spacing between paragraphs */
   text-align: left;
   hyphens: auto;
   -webkit-hyphens: auto;

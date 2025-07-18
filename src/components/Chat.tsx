@@ -282,11 +282,10 @@ export default function Chat() {
                 }
               }}
               placeholder="Share your thoughts..."
-              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-500 font-surt-medium"
               style={{ resize: 'none' }}
               minRows={1}
               maxRows={6}
-              cacheMeasurements
               disabled={isLoading || !encryptionKey}
             />
             <button
