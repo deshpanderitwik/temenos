@@ -150,7 +150,7 @@ export default function SystemPromptsList({
       <div className="flex justify-center px-4 pt-6 pb-4">
         <button
           onClick={onNewPrompt}
-          className="px-5 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
+                      className="px-5 pt-2 pb-2.5 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
         >
           + New System Prompt
         </button>

@@ -24,6 +24,7 @@ interface Narrative {
   created: string;
   lastModified: string;
   characterCount: number;
+  preferredMode?: 'draft' | 'main';
 }
 
 export default function SessionLayout() {
@@ -69,6 +70,7 @@ export default function SessionLayout() {
   // Preloaded data state
   const [preloadedConversations, setPreloadedConversations] = useState<Array<{ id: string; title: string; created: string; lastModified: string; messageCount: number }>>([]);
   const [preloadedNarratives, setPreloadedNarratives] = useState<Array<{ id: string; title: string; created: string; lastModified: string; characterCount: number }>>([]);
+  const [narrativesRefreshTrigger, setNarrativesRefreshTrigger] = useState(0);
   const [preloadedSystemPrompts, setPreloadedSystemPrompts] = useState<Array<{ id: string; title: string; body: string; created: string; lastModified: string }>>([]);
 
   // Narrative panel ref
@@ -161,6 +163,7 @@ export default function SessionLayout() {
       const response = await fetch('/api/narratives');
       if (response.ok) {
         const data = await response.json();
+
         setPreloadedNarratives(data.narratives || []);
       }
     } catch (error) {
@@ -354,6 +357,11 @@ export default function SessionLayout() {
         const data = await response.json();
         if (data.narrative) {
           setCurrentNarrative(data.narrative);
+          
+          // Restore the preferred mode for this narrative
+          if (data.narrative.preferredMode) {
+            setIsDraftMode(data.narrative.preferredMode === 'draft');
+          }
         }
       }
     } catch (error) {
@@ -363,6 +371,8 @@ export default function SessionLayout() {
 
   const handleNewNarrative = () => {
     setCurrentNarrative(null);
+    // Reset to draft mode for new narratives
+    setIsDraftMode(true);
   };
 
   const handleDeleteNarrative = (deletedNarrativeId: string) => {
@@ -376,9 +386,16 @@ export default function SessionLayout() {
   const handleNarrativeUpdate = (updatedNarrative: Narrative | null) => {
     setCurrentNarrative(updatedNarrative);
     
+    // Restore the preferred mode for this narrative
+    if (updatedNarrative?.preferredMode) {
+      setIsDraftMode(updatedNarrative.preferredMode === 'draft');
+    }
+    
     // Refresh preloaded narratives after update
     if (updatedNarrative) {
       preloadNarratives();
+      // Increment refresh trigger to force NarrativesList to update
+      setNarrativesRefreshTrigger(prev => prev + 1);
     }
   };
 
@@ -558,6 +575,7 @@ export default function SessionLayout() {
             onNewNarrative={handleNewNarrative}
             onDeleteNarrative={handleDeleteNarrative}
             preloadedNarratives={preloadedNarratives}
+            refreshTrigger={narrativesRefreshTrigger}
           />
         )}
 

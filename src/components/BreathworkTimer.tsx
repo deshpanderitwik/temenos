@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBreathwork } from '@/hooks/useBreathwork';
+import { useBreathworkSound } from '@/hooks/useBreathworkSound';
 import { BreathPattern, getPatternById } from '@/utils/breathworkPatterns';
+import { loadBreathworkSettings, saveBreathworkSettings, BreathworkSettings as StoredSettings } from '@/utils/breathworkSettings';
 import BreathworkVisualGuide from './BreathworkVisualGuide';
 import BreathworkPatternSelector from './BreathworkPatternSelector';
 import BreathworkSettings from './BreathworkSettings';
@@ -31,6 +33,9 @@ const BreathworkTimer = ({
   const [showPatternSelector, setShowPatternSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [wasPausedBeforeSettings, setWasPausedBeforeSettings] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
+  const lastCountRef = useRef(0);
 
   const {
     session,
@@ -52,22 +57,61 @@ const BreathworkTimer = ({
     createSession
   } = useBreathwork();
 
-  // Initialize with default pattern (Box Breathing)
+  const { playCountSound, initializeAudio, isAudioInitialized: soundInitialized, testSound, isMuted, toggleMute } = useBreathworkSound();
+
+  // Initialize with persisted settings or defaults
   useEffect(() => {
-    if (!selectedPattern) {
-      const defaultPattern = getPatternById('box-breathing');
-      if (defaultPattern) {
-        setSelectedPattern(defaultPattern);
-        createSession(defaultPattern, breaths);
+    if (!isInitialized) {
+      const storedSettings = loadBreathworkSettings();
+      const pattern = getPatternById(storedSettings.selectedPatternId);
+      
+      if (pattern) {
+        setSelectedPattern(pattern);
+        setBreaths(storedSettings.breaths);
+        createSession(pattern, storedSettings.breaths);
+      } else {
+        // Fallback to default if stored pattern doesn't exist
+        const defaultPattern = getPatternById('box-breathing');
+        if (defaultPattern) {
+          setSelectedPattern(defaultPattern);
+          setBreaths(storedSettings.breaths);
+          createSession(defaultPattern, storedSettings.breaths);
+        }
       }
+      setIsInitialized(true);
     }
-  }, [selectedPattern, breaths, createSession]);
+  }, [isInitialized, createSession]);
+
+  // Play count sounds when count changes
+  useEffect(() => {
+    console.log('Count effect:', { 
+      currentCount, 
+      lastCount: lastCountRef.current, 
+      isActive, 
+      isPaused, 
+      hasPhase: !!currentPhase, 
+      isAudioInitialized 
+    });
+    
+    if (isActive && !isPaused && currentPhase && isAudioInitialized && currentCount !== lastCountRef.current) {
+      console.log('Playing count sound for count:', currentCount);
+      playCountSound(currentPhase);
+      lastCountRef.current = currentCount;
+    }
+  }, [currentCount, isActive, isPaused, currentPhase, isAudioInitialized, playCountSound]);
 
   // Handle pattern selection
   const handlePatternSelect = (pattern: BreathPattern) => {
     setSelectedPattern(pattern);
-    setBreaths(pattern.defaultBreaths || 10);
-    createSession(pattern, pattern.defaultBreaths || 10);
+    const newBreaths = pattern.defaultBreaths || breaths;
+    setBreaths(newBreaths);
+    createSession(pattern, newBreaths);
+    
+    // Save settings
+    saveBreathworkSettings({
+      selectedPatternId: pattern.id,
+      breaths: newBreaths,
+    });
   };
 
   // Handle breaths change
@@ -75,6 +119,12 @@ const BreathworkTimer = ({
     setBreaths(newBreaths);
     if (selectedPattern) {
       createSession(selectedPattern, newBreaths);
+      
+      // Save settings
+      saveBreathworkSettings({
+        selectedPatternId: selectedPattern.id,
+        breaths: newBreaths,
+      });
     }
   };
 
@@ -84,7 +134,10 @@ const BreathworkTimer = ({
       // Exiting full-screen mode
       setIsFullScreen(false);
       onFullScreenChange?.(false);
+      // Reset timer when closing, same as stop button
       stop();
+      reset();
+      lastCountRef.current = 0;
     } else {
       // Entering full-screen mode
       setIsFullScreen(true);
@@ -96,6 +149,7 @@ const BreathworkTimer = ({
   // Handle session controls
   const handleStart = () => {
     if (!session) return;
+    
     if (isPaused) {
       resume();
     } else {
@@ -110,6 +164,7 @@ const BreathworkTimer = ({
   const handleStop = () => {
     stop();
     reset();
+    lastCountRef.current = 0;
   };
 
   // Handle settings modal open/close with auto-pause
@@ -143,7 +198,23 @@ const BreathworkTimer = ({
             <div className="bg-white/10 rounded-lg p-2 space-y-2">
               {/* Play/Pause Button */}
               <button
-                onClick={!isActive || isPaused ? handleStart : handlePause}
+                onClick={async (e) => {
+                  // Ensure audio is initialized on first click
+                  if (!isAudioInitialized) {
+                    try {
+                      await initializeAudio();
+                      setIsAudioInitialized(true);
+                    } catch (error) {
+                      console.error('Failed to initialize audio:', error);
+                    }
+                  }
+                  
+                  if (!isActive || isPaused) {
+                    handleStart();
+                  } else {
+                    handlePause();
+                  }
+                }}
                 className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
                 title={!isActive || isPaused ? 'Start' : 'Pause'}
               >
@@ -167,6 +238,23 @@ const BreathworkTimer = ({
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
                 </svg>
+              </button>
+              
+              {/* Mute/Unmute Button */}
+              <button
+                onClick={toggleMute}
+                className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                  </svg>
+                )}
               </button>
               
               {/* Settings Button */}

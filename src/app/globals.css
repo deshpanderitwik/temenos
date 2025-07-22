@@ -24,7 +24,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-work-sans), 'Work Sans', Arial, Helvetica, sans-serif;
+  font-family: var(--font-surt-regular), 'Surt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Global paragraph spacing - 24px between paragraphs */
@@ -224,7 +224,6 @@ p:last-child {
 .overflow-y-auto.scrollbar-hide {
   scrollbar-width: none !important;
   scrollbar-color: transparent transparent !important;
-  padding-right: 0 !important;
 }
 
 /* Ensure text selection works properly in chat messages */
@@ -742,19 +741,29 @@ summary {
 }
 
 /* Special styling for the first paragraph to create a drop cap effect */
-/* .narrative-editor .ProseMirror p:first-of-type {
+.narrative-editor .ProseMirror p:first-of-type {
   text-indent: 0;
 }
 
 .narrative-editor .ProseMirror p:not(:first-of-type) {
-  text-indent: 1.5em;
-} */
+  text-indent: 0;
+}
 
-.chat-message-content .prose p,
-.chat-message-content .prose ul,
-.chat-message-content .prose ol {
-  margin-bottom: 1.5rem !important; /* 24px equivalent */
-  margin-top: 0.5rem !important;
+/* Ensure consistent spacing for indentation */
+.narrative-editor .ProseMirror {
+  white-space: pre-wrap;
+  tab-size: 4; /* Set tab width to 4 spaces */
+}
+
+.chat-message-content .prose ul, .chat-message-content .prose ol {
+  margin-bottom: 0rem !important;
+  margin-top: 0rem !important;
+}
+
+/* Add bottom margin to paragraphs that are not inside list items */
+.chat-message-content .prose > p {
+  margin-bottom: 1rem !important;
+  margin-top: 0rem !important;
 }
 
 .chat-message-content .prose > :first-child {

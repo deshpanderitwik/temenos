@@ -14,6 +14,7 @@ interface Narrative {
   created: string;
   lastModified: string;
   characterCount: number;
+  preferredMode?: 'draft' | 'main'; // Track user's preferred mode for this narrative
 }
 
 // Ensure narratives directory exists
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
 
     await ensureNarrativesDir();
 
-    const { id, title, content, draftContent } = await request.json();
+    const { id, title, content, draftContent, preferredMode } = await request.json();
 
     if (!title || !content) {
       return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
@@ -101,8 +102,9 @@ export async function POST(request: Request) {
     
     let createdDate = now;
     let existingDraftContent = '';
+    let existingPreferredMode: 'draft' | 'main' | undefined;
     
-    // If updating existing narrative, preserve the created date and existing main content
+    // If updating existing narrative, preserve the created date and existing content
     if (id) {
       try {
         const existingFilePath = path.join(NARRATIVES_DIR, `${id}.enc`);
@@ -110,14 +112,16 @@ export async function POST(request: Request) {
         const existingNarrative: Narrative = JSON.parse(await smartDecrypt(existingEncryptedContent, ENCRYPTION_KEY));
         createdDate = existingNarrative.created;
         existingDraftContent = existingNarrative.draftContent || '';
+        existingPreferredMode = existingNarrative.preferredMode;
       } catch {
         // If file doesn't exist, treat as new narrative
         createdDate = now;
       }
     }
     
-    // Use provided main content or preserve existing
+    // Use provided content or preserve existing
     const finalDraftContent = draftContent !== undefined ? draftContent : existingDraftContent;
+    const finalPreferredMode = preferredMode !== undefined ? preferredMode : existingPreferredMode;
     
     const narrative: Narrative = {
       id: narrativeId,
@@ -126,7 +130,8 @@ export async function POST(request: Request) {
       draftContent: finalDraftContent,
       created: createdDate,
       lastModified: now,
-      characterCount: content.length
+      characterCount: content.length,
+      preferredMode: finalPreferredMode
     };
 
     const encryptedContent = await encrypt(JSON.stringify(narrative), ENCRYPTION_KEY);

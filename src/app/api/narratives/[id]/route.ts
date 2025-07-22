@@ -14,6 +14,7 @@ interface Narrative {
   created: string;
   lastModified: string;
   characterCount: number;
+  preferredMode?: 'draft' | 'main'; // Track user's preferred mode for this narrative
 }
 
 // GET /api/narratives/[id] - Load specific narrative

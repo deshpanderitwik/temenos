@@ -12,6 +12,8 @@
  * - Cmd+B: Bold text
  * - Cmd+I: Italic text
  * - Cmd+1/2/3: Heading levels 1/2/3
+ * - Tab: Insert tab character
+ * - Shift+Tab: Remove indentation (outdent)
  */
 
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -35,6 +37,7 @@ interface Narrative {
   created: string;
   lastModified: string;
   characterCount: number;
+  preferredMode?: 'draft' | 'main';
 }
 
 interface NarrativePanelProps {
@@ -82,15 +85,28 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isAutoSavingRef = useRef(false);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Cursor position tracking for both modes
+  const cursorPositionsRef = useRef<{
+    draft: { from: number; to: number } | null;
+    main: { from: number; to: number } | null;
+  }>({
+    draft: null,
+    main: null
+  });
 
-
+  // Helper function to get editor content - defined before editor to avoid hoisting issues
+  const getEditorContent = (editor: any): string => {
+    if (!editor) return '';
+    return editor.getHTML();
+  };
 
   const editor = useEditor({
     extensions: [
       Document,
       Paragraph.configure({
         HTMLAttributes: {
-          class: 'whitespace-pre-wrap',
+          class: '',
         },
       }),
       Text,
@@ -109,8 +125,22 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     ],
     content: '<p>Start your story here...</p>',
     immediatelyRender: false,
+    parseOptions: {
+      preserveWhitespace: true,
+    },
     onUpdate: ({ editor }) => {
-      const content = editor.getHTML();
+      // Get content from editor
+      const content = getEditorContent(editor);
+      
+      // Store current cursor position for the current mode
+      if (editor && editor.state && editor.state.selection) {
+        const { from, to } = editor.state.selection;
+        if (isDraftMode) {
+          cursorPositionsRef.current.draft = { from, to };
+        } else {
+          cursorPositionsRef.current.main = { from, to };
+        }
+      }
       
       // Debounce state updates to prevent cursor jumping during rapid typing
       if (updateTimeoutRef.current) {
@@ -140,8 +170,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none',
-        style: 'height: 100%; overflow: visible;',
+        class: 'max-w-none focus:outline-none',
+        style: 'height: 100%; overflow: visible; white-space: pre-wrap;',
       },
       handleKeyDown: (view, event) => {
         // Custom keyboard shortcuts for the narrative editor
@@ -150,7 +180,33 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         // Tab key - insert tab character instead of moving focus
         if (event.key === 'Tab') {
           event.preventDefault();
-          editor?.commands.insertContent('\t');
+          
+          if (event.shiftKey) {
+            // Shift+Tab: Remove indentation (outdent)
+            const { from, to } = state.selection;
+            const lineStart = state.doc.resolve(from).start();
+            const lineEnd = state.doc.resolve(from).end();
+            const lineContent = state.doc.textBetween(lineStart, lineEnd);
+            
+            // Check if line starts with indentation (tabs, spaces, or non-breaking spaces)
+            const indentationMatch = lineContent.match(/^(\t{1,4}|\u00A0{1,4}|\s{1,4})/);
+            if (indentationMatch) {
+              const indentLength = indentationMatch[1].length;
+              const newFrom = from - indentLength;
+              const newTo = to - indentLength;
+              
+              // Remove the indentation
+              editor?.chain()
+                .setTextSelection({ from: lineStart, to: lineStart + indentLength })
+                .deleteSelection()
+                .setTextSelection({ from: newFrom, to: newTo })
+                .run();
+            }
+          } else {
+            // Regular Tab: Insert tab character
+            editor?.commands.insertContent('\t');
+          }
+          
           return true;
         }
         
@@ -217,6 +273,110 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     setTitleOpacity(newOpacity);
   }, [editor]);
 
+  // Save title immediately when user clicks away
+  const saveTitle = useCallback(async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const titleToSave = narrativeState.title || 'New Narrative';
+      
+      const response = await fetch('/api/narratives', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: narrativeState.id,
+          title: titleToSave,
+          content: narrativeState.mainContent,
+          draftContent: narrativeState.draftContent,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Title save failed: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setNarrativeState(prev => ({
+          ...prev,
+          lastSaved: new Date(),
+          hasUnsavedChanges: false
+        }));
+        
+        // Trigger save feedback
+        onSave?.();
+        
+        // Update parent state for title changes
+        onNarrativeUpdate(data.narrative);
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isSaving, narrativeState, onSave, onNarrativeUpdate]);
+
+  // Save body content immediately when user clicks away
+  const saveBody = useCallback(async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const currentContent = editor ? getEditorContent(editor) : '';
+      const titleToSave = narrativeState.title || 'New Narrative';
+      
+      // Determine what to save based on current mode
+      const contentToSave = isDraftMode ? currentContent : narrativeState.mainContent;
+      const draftContentToSave = isDraftMode ? narrativeState.draftContent : currentContent;
+      
+      const response = await fetch('/api/narratives', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: narrativeState.id,
+          title: titleToSave,
+          content: contentToSave,
+          draftContent: draftContentToSave,
+          preferredMode: isDraftMode ? 'draft' : 'main',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Body save failed: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setNarrativeState(prev => ({
+          ...prev,
+          lastSaved: new Date(),
+          hasUnsavedChanges: false
+        }));
+        
+        // Trigger save feedback
+        onSave?.();
+        
+        // Update parent state for body changes
+        onNarrativeUpdate(data.narrative);
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isSaving, narrativeState, isDraftMode, onSave, onNarrativeUpdate, editor]);
+
   // Auto-save handler to avoid circular dependency
   const handleAutoSave = useCallback(async (content: string) => {
     if (isSaving) return;
@@ -232,7 +392,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       const draftContentToSave = isDraftMode ? narrativeState.draftContent : content;
       
       // Skip save if content is empty (but always save title)
-      if (!contentToSave || contentToSave.trim() === '' || contentToSave === '<p></p>') {
+      const contentToCheck = contentToSave || '';
+      if (!contentToSave || contentToCheck.trim() === '' || contentToCheck === '<p></p>') {
         // Still save if we have a title to preserve
         if (titleToSave && titleToSave !== 'New Narrative') {
           const response = await fetch('/api/narratives', {
@@ -251,14 +412,16 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.narrative) {
-              // Don't trigger onNarrativeUpdate during auto-save to prevent cursor jumping
-              // Only update local state
+              // Update local state
               setNarrativeState(prev => ({
                 ...prev,
                 id: data.narrative?.id || prev.id, // Update ID if a new narrative was created
                 lastSaved: new Date(),
                 hasUnsavedChanges: false
               }));
+              
+              // For title-only saves, we can safely update parent state without cursor jumping
+              onNarrativeUpdate(data.narrative);
             }
           }
         }
@@ -305,7 +468,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       setIsSaving(false);
       isAutoSavingRef.current = false;
     }
-  }, [isSaving, narrativeState, isDraftMode, onSave]);
+  }, [isSaving, narrativeState, isDraftMode, onSave, onNarrativeUpdate]);
 
   // Unified save function - handles both draft and main content
   const saveNarrative = useCallback(async (content?: string) => {
@@ -315,7 +478,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     
     try {
       // Get current editor content if not provided
-      const currentContent = content || editor?.getHTML() || '';
+      const currentContent = content || (editor ? getEditorContent(editor) : '') || '';
       const titleToSave = narrativeState.title || 'New Narrative';
       
       // Determine what to save based on current mode
@@ -323,7 +486,8 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       const draftContentToSave = isDraftMode ? narrativeState.draftContent : currentContent;
       
       // Skip save if content is empty (but always save title)
-      if (!contentToSave || contentToSave.trim() === '' || contentToSave === '<p></p>') {
+      const contentToCheck = contentToSave || '';
+      if (!contentToSave || contentToCheck.trim() === '' || contentToCheck === '<p></p>') {
         // Still save if we have a title to preserve
         if (titleToSave && titleToSave !== 'New Narrative') {
           const response = await fetch('/api/narratives', {
@@ -336,6 +500,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
               title: titleToSave,
               content: narrativeState.mainContent,
               draftContent: narrativeState.draftContent,
+              preferredMode: isDraftMode ? 'draft' : 'main',
             }),
           });
           
@@ -370,6 +535,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           title: titleToSave,
           content: contentToSave,
           draftContent: draftContentToSave,
+          preferredMode: isDraftMode ? 'draft' : 'main',
         }),
       });
 
@@ -469,6 +635,14 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           hasUnsavedChanges: prev.id === currentNarrative.id ? prev.hasUnsavedChanges : false
         };
       });
+      
+      // Reset cursor positions when switching to a new narrative
+      if (narrativeState.id !== currentNarrative.id) {
+        cursorPositionsRef.current = {
+          draft: null,
+          main: null
+        };
+      }
     } else {
       // Reset to default state when no narrative is selected
       setNarrativeState({
@@ -479,6 +653,12 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         lastSaved: null,
         hasUnsavedChanges: false
       });
+      
+      // Reset cursor positions
+      cursorPositionsRef.current = {
+        draft: null,
+        main: null
+      };
       
       if (editor) {
         editor.commands.setContent('<p></p>', false);
@@ -498,28 +678,42 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       // This prevents losing user input when auto-save triggers a re-render
       const currentEditorContent = editor.getHTML();
       
-      // Normalize content for comparison to avoid whitespace differences
-      const normalizeContent = (content: string) => {
-        return content.replace(/\s+/g, ' ').trim();
-      };
-      
-      const normalizedCurrent = normalizeContent(currentEditorContent);
-      const normalizedToLoad = normalizeContent(contentToLoad);
-      
-      if (normalizedCurrent !== normalizedToLoad) {
-        // Preserve cursor position by storing it before content update
+      // Simple content comparison
+      if (currentEditorContent !== contentToLoad) {
+        // Store current cursor position before content update
         const { from, to } = editor.state.selection;
+        if (isDraftMode) {
+          cursorPositionsRef.current.draft = { from, to };
+        } else {
+          cursorPositionsRef.current.main = { from, to };
+        }
         
-        editor.commands.setContent(contentToLoad, false);
+        // Set the content with whitespace preservation
+        editor.commands.setContent(contentToLoad, false, { preserveWhitespace: true });
         
-        // Restore cursor position if it's still valid
-        try {
-          const newState = editor.state;
-          if (from <= newState.doc.content.size && to <= newState.doc.content.size) {
-            editor.commands.setTextSelection({ from, to });
+        // Try to restore the stored cursor position for this mode
+        const storedPosition = isDraftMode 
+          ? cursorPositionsRef.current.draft 
+          : cursorPositionsRef.current.main;
+        
+        if (storedPosition) {
+          try {
+            const newState = editor.state;
+            if (storedPosition.from <= newState.doc.content.size && storedPosition.to <= newState.doc.content.size) {
+              editor.commands.setTextSelection({ 
+                from: storedPosition.from, 
+                to: storedPosition.to 
+              });
+            } else {
+              // If stored position is invalid, place cursor at the end
+              editor.commands.focus('end');
+            }
+          } catch (error) {
+            // If cursor position is invalid, just place it at the end
+            editor.commands.focus('end');
           }
-        } catch (error) {
-          // If cursor position is invalid, just place it at the end
+        } else {
+          // If no stored position, place cursor at the end
           editor.commands.focus('end');
         }
       }
@@ -548,15 +742,16 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       });
     } else {
       // If single paragraph, just insert the text at cursor position
-      editor.commands.insertContent(text.trim());
+      // Don't trim to preserve tabs and other whitespace
+      editor.commands.insertContent(text);
     }
     
     // Update state based on current mode
     setNarrativeState(prev => ({
       ...prev,
       ...(isDraftMode 
-        ? { mainContent: editor.getHTML() }
-        : { draftContent: editor.getHTML() }
+        ? { mainContent: getEditorContent(editor) }
+        : { draftContent: getEditorContent(editor) }
       ),
       hasUnsavedChanges: true
     }));
@@ -565,15 +760,23 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
   // Implemented save function
   const saveCurrentContent = async () => {
     if (!editor) return;
-    await saveNarrative();
+    await saveNarrative(getEditorContent(editor));
   };
 
   const handleModeSwitch = useCallback(async () => {
     if (!editor) return;
     
     // Save current content before switching (title is preserved in narrativeState)
-    const currentContent = editor.getHTML();
+    const currentContent = getEditorContent(editor);
     await saveNarrative(currentContent);
+    
+    // Store current cursor position before switching
+    const { from, to } = editor.state.selection;
+    if (isDraftMode) {
+      cursorPositionsRef.current.draft = { from, to };
+    } else {
+      cursorPositionsRef.current.main = { from, to };
+    }
     
     // Toggle the mode
     const newMode = !isDraftMode;
@@ -584,8 +787,34 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
       ? narrativeState.mainContent || '<p></p>'
       : narrativeState.draftContent || '<p></p>';
     
-    // Use setContent with preserveWhitespace to maintain history better
-    editor.commands.setContent(contentToLoad, false);
+    // Set content with whitespace preservation
+    editor.commands.setContent(contentToLoad, false, { preserveWhitespace: true });
+    
+    // Restore the previously stored cursor position for this mode
+    const storedPosition = newMode 
+      ? cursorPositionsRef.current.draft 
+      : cursorPositionsRef.current.main;
+    
+    if (storedPosition) {
+      try {
+        const newState = editor.state;
+        if (storedPosition.from <= newState.doc.content.size && storedPosition.to <= newState.doc.content.size) {
+          editor.commands.setTextSelection({ 
+            from: storedPosition.from, 
+            to: storedPosition.to 
+          });
+        } else {
+          // If stored position is invalid, place cursor at the end
+          editor.commands.focus('end');
+        }
+      } catch (error) {
+        // If cursor position is invalid, just place it at the end
+        editor.commands.focus('end');
+      }
+    } else {
+      // If no stored position, place cursor at the end
+      editor.commands.focus('end');
+    }
   }, [editor, isDraftMode, narrativeState, saveNarrative, setIsDraftMode]);
 
   // Expose functions to parent component via ref
@@ -620,7 +849,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 }
                 
                 saveTimeoutRef.current = setTimeout(() => {
-                  handleAutoSave(editor?.getHTML() || '');
+                  handleAutoSave(editor ? getEditorContent(editor) : '');
                 }, 500);
               }}
               onBlur={async e => {
@@ -634,13 +863,13 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
                 // Recalculate opacity based on current scroll position
                 handleScroll();
                 
-                // Clear any pending timeout and save immediately
+                // Clear any pending timeout
                 if (saveTimeoutRef.current) {
                   clearTimeout(saveTimeoutRef.current);
                 }
                 
-                // Save immediately when title loses focus
-                await handleAutoSave(editor?.getHTML() || '');
+                // Save title immediately when user clicks away
+                await saveTitle();
               }}
               onMouseEnter={() => {
                 if (titleOpacity < 1) {
@@ -674,6 +903,15 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
             <div 
               ref={scrollContainerRef}
               className="absolute inset-0 overflow-y-auto scrollbar-hide"
+              onBlur={async () => {
+                // Clear any pending timeout
+                if (saveTimeoutRef.current) {
+                  clearTimeout(saveTimeoutRef.current);
+                }
+                
+                // Save body content immediately when user clicks away
+                await saveBody();
+              }}
             >
               <EditorContent 
                 editor={editor} 

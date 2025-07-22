@@ -98,8 +98,8 @@ export default function BreathworkSettings({
                         {getCategoryDisplayName(breathPattern.category)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mb-2">{breathPattern.description}</p>
-                    <div className="text-xs text-gray-500 font-mono">
+                    <p className="text-xs text-gray-400 mb-2 font-surt-regular">{breathPattern.description}</p>
+                    <div className="text-xs text-gray-500 font-surt-regular">
                       {getPhaseDescription(breathPattern)}
                     </div>
                   </div>
@@ -136,7 +136,7 @@ export default function BreathworkSettings({
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
+            className="px-5 pt-2 pb-2.5 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
           >
             Save
           </button>

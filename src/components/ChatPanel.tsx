@@ -441,7 +441,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message..."
-                  className="w-full text-white/95 focus:outline-none px-3 py-2 font-surt-medium"
+                  className="w-full text-white/95 focus:outline-none px-3 pt-2 pb-3.5 font-surt-medium placeholder:text-gray-400"
                   style={{ 
                     lineHeight: '1.5',
                     resize: 'none'
@@ -457,7 +457,7 @@ export default function ChatPanel({ currentConversation, onConversationUpdate, o
                   <select
                     value={selectedModel}
                     onChange={(e) => onModelChange?.(e.target.value)}
-                    className="px-3 py-1 text-xs font-surt-medium bg-white/10 text-white/95 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
+                    className="px-3 py-1 text-xs font-surt-medium bg-white/10 text-white/60 rounded hover:bg-white/20 transition-colors appearance-none cursor-pointer border-none focus:outline-none focus:ring-0 text-center"
                     style={{
                       backgroundImage: 'none',
                       paddingRight: '12px',

@@ -43,7 +43,7 @@ export default function ItemListBrowser<T>({
             onNewItem();
             if (closeOnNewItem) onClose();
           }}
-          className="px-5 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
+                      className="px-5 pt-2 pb-2.5 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
         >
           {newItemLabel}
         </button>

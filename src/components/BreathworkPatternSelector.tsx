@@ -79,14 +79,14 @@ export default function BreathworkPatternSelector({
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-base font-surt-medium text-white">{pattern.name}</h3>
-                <span className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full">
-                  {getCategoryDisplayName(pattern.category)}
-                </span>
+                                  <span className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full font-surt-regular">
+                    {getCategoryDisplayName(pattern.category)}
+                  </span>
               </div>
-              <p className="text-sm text-gray-400 mb-3">{pattern.description}</p>
-              <div className="text-xs text-gray-500 font-mono">
-                {getPhaseDescription(pattern)}
-              </div>
+                              <p className="text-sm text-gray-400 mb-3 font-surt-regular">{pattern.description}</p>
+                                  <div className="text-xs text-gray-500 font-surt-regular">
+                      {getPhaseDescription(pattern)}
+                    </div>
             </div>
           ))}
         </div>
@@ -107,7 +107,7 @@ export default function BreathworkPatternSelector({
                 onPatternSelect(selectedPattern);
                 onClose();
               }}
-              className="px-5 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
+              className="px-5 pt-2 pb-2.5 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors text-base font-surt-medium shadow-none"
             >
               Select Pattern
             </button>

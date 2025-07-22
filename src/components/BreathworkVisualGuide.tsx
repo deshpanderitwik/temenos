@@ -182,6 +182,9 @@ export default function BreathworkVisualGuide({
           <div className="text-sm text-white/60 font-surt-regular">
             {pattern.name}
           </div>
+          <div className="text-sm text-white/40 font-surt-regular mt-1">
+            {totalBreaths} rounds
+          </div>
         </div>
       )}
     </div>

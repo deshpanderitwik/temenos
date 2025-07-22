@@ -9,6 +9,7 @@ interface Narrative {
   created: string;
   lastModified: string;
   characterCount: number;
+  preferredMode?: 'draft' | 'main';
 }
 
 interface NarrativesListProps {
@@ -19,6 +20,7 @@ interface NarrativesListProps {
   onNewNarrative: () => void;
   onDeleteNarrative: (narrativeId: string) => void;
   preloadedNarratives?: Array<{ id: string; title: string; created: string; lastModified: string; characterCount: number }>;
+  refreshTrigger?: number; // Add a refresh trigger that increments when narratives are updated
 }
 
 export default function NarrativesList({
@@ -29,10 +31,11 @@ export default function NarrativesList({
   onNewNarrative,
   onDeleteNarrative,
   preloadedNarratives,
+  refreshTrigger = 0,
 }: NarrativesListProps) {
   const [narratives, setNarratives] = useState<Narrative[]>([]);
 
-  // Load narratives when the sidebar is opened
+  // Load narratives when the sidebar is opened, when preloaded data changes, or when refresh is triggered
   useEffect(() => {
     if (isOpen) {
       if (preloadedNarratives && preloadedNarratives.length > 0) {
@@ -46,7 +49,7 @@ export default function NarrativesList({
       // Reset state when modal closes
       setNarratives([]);
     }
-  }, [isOpen, preloadedNarratives]);
+  }, [isOpen, preloadedNarratives, refreshTrigger]);
 
   const loadNarratives = async () => {
     try {
