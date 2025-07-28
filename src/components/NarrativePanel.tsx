@@ -728,22 +728,27 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
     const hasMultipleParagraphs = text.includes('\n\n') || text.split('\n').filter(line => line.trim().length > 0).length > 1;
     
     if (hasMultipleParagraphs) {
-      // If multiple paragraphs, insert each line as a new paragraph
-      const lines = text.split('\n').filter(line => line.trim().length > 0);
-      lines.forEach((line, index) => {
-        if (index === 0) {
-          // Insert first line at cursor position
-          editor.commands.insertContent(line);
-        } else {
-          // Add subsequent lines as new paragraphs
+      // Split by double newlines to preserve paragraph structure
+      const paragraphs = text.split('\n\n').filter(paragraph => paragraph.trim().length > 0);
+      
+      paragraphs.forEach((paragraph, paragraphIndex) => {
+        if (paragraphIndex > 0) {
+          // Add paragraph break between paragraphs
           editor.commands.enter();
-          editor.commands.insertContent(line);
         }
+        
+        // Convert paragraph to HTML to preserve line breaks within paragraphs
+        const lines = paragraph.split('\n').filter(line => line.trim().length > 0);
+        const htmlContent = `<p>${lines.join('<br>')}</p>`;
+        
+        // Insert as HTML to preserve formatting
+        editor.commands.insertContent(htmlContent);
       });
     } else {
-      // If single paragraph, just insert the text at cursor position
-      // Don't trim to preserve tabs and other whitespace
-      editor.commands.insertContent(text);
+      // If single paragraph, convert to HTML to preserve line breaks
+      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      const htmlContent = `<p>${lines.join('<br>')}</p>`;
+      editor.commands.insertContent(htmlContent);
     }
     
     // Update state based on current mode

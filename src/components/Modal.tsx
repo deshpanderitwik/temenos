@@ -26,8 +26,9 @@ export default function Modal({
   };
 
   const handleScrimClick = (e: React.MouseEvent) => {
-    console.log('Scrim clicked, closing modal');
-    onClose();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   };
 
   return (

@@ -84,17 +84,7 @@ const BreathworkTimer = ({
 
   // Play count sounds when count changes
   useEffect(() => {
-    console.log('Count effect:', { 
-      currentCount, 
-      lastCount: lastCountRef.current, 
-      isActive, 
-      isPaused, 
-      hasPhase: !!currentPhase, 
-      isAudioInitialized 
-    });
-    
     if (isActive && !isPaused && currentPhase && isAudioInitialized && currentCount !== lastCountRef.current) {
-      console.log('Playing count sound for count:', currentCount);
       playCountSound(currentPhase);
       lastCountRef.current = currentCount;
     }
@@ -205,7 +195,7 @@ const BreathworkTimer = ({
                       await initializeAudio();
                       setIsAudioInitialized(true);
                     } catch (error) {
-                      console.error('Failed to initialize audio:', error);
+                      // Silent error handling for privacy
                     }
                   }
                   

@@ -32,14 +32,10 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
     if (isInitializedRef.current) return;
 
     try {
-      console.log('Initializing audio...');
-      console.log('Tone.context.state before start:', Tone.context.state);
-      
       // Check if audio context is already running
       if (Tone.context.state !== 'running') {
         // Start audio context (required for browser autoplay policies)
         await Tone.start();
-        console.log('Tone.context.state after start:', Tone.context.state);
       }
       
       // Create a simple synth for better sound
@@ -91,36 +87,26 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
       filterRef.current = filter;
       reverbRef.current = reverb;
       delayRef.current = delay;
+
       isInitializedRef.current = true;
-      
-      console.log('Audio initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize audio:', error);
+      // Silent error handling for privacy
     }
   }, []);
 
   // Play count sound for current phase
   const playCountSound = useCallback((phase: BreathPhase) => {
-    console.log('playCountSound called:', { phase, isInitialized: isInitializedRef.current, isMuted });
-    
     if (!synthRef.current || !isInitializedRef.current || isMuted) {
-      console.log('Audio not ready or muted:', { 
-        hasSynth: !!synthRef.current, 
-        isInitialized: isInitializedRef.current,
-        isMuted
-      });
       return;
     }
 
     try {
       const note = F_MINOR_NOTES[phase.type] || F_MINOR_NOTES.inhale;
-      console.log('Playing note:', note, 'for phase:', phase.type);
       
       // Play the note directly with the synth
       synthRef.current.triggerAttackRelease(note, '8n');
-      console.log('Sound triggered');
     } catch (error) {
-      console.error('Failed to play count sound:', error);
+      // Silent error handling for privacy
     }
   }, [isMuted]);
 
@@ -131,20 +117,15 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
 
   // Test sound function
   const testSound = useCallback(() => {
-    console.log('testSound called, isInitialized:', isInitializedRef.current);
-    
     if (!synthRef.current || !isInitializedRef.current) {
-      console.log('Test sound: Audio not ready');
       return;
     }
 
     try {
-      console.log('Playing test sound...');
       // Play a test note (F3)
       synthRef.current.triggerAttackRelease('F3', '4n');
-      console.log('Test sound triggered');
     } catch (error) {
-      console.error('Failed to play test sound:', error);
+      // Silent error handling for privacy
     }
   }, []);
 

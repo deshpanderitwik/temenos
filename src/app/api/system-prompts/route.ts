@@ -30,7 +30,6 @@ async function loadSystemPromptsFromFiles(): Promise<SystemPrompt[]> {
     
     const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
     if (!ENCRYPTION_KEY || !validateEncryptionKey(ENCRYPTION_KEY)) {
-      console.error('Encryption key not configured or invalid');
       return [];
     }
 
@@ -57,13 +56,13 @@ async function loadSystemPromptsFromFiles(): Promise<SystemPrompt[]> {
           });
         }
       } catch (error) {
-        console.error(`Error loading prompt from ${file}:`, error);
+        // Silent error handling for privacy
       }
     }
     
     return prompts;
   } catch (error) {
-    console.error('Error loading system prompts from files:', error);
+    // Silent error handling for privacy
     return [];
   }
 }
@@ -82,7 +81,7 @@ async function saveSystemPromptToFile(prompt: SystemPrompt): Promise<void> {
     const encryptedContent = await encrypt(JSON.stringify(prompt), ENCRYPTION_KEY);
     await fs.writeFile(filePath, encryptedContent, 'utf-8');
   } catch (error) {
-    console.error('Error saving system prompt to file:', error);
+    // Silent error handling for privacy
     throw error;
   }
 }
@@ -141,7 +140,7 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ prompt });
   } catch (e) {
-    console.error('Error creating system prompt:', e);
+    // Silent error handling for privacy
     return NextResponse.json({ error: 'Failed to create system prompt.' }, { status: 500 });
   }
 } 

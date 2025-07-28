@@ -5,6 +5,7 @@ import NarrativePanel, { NarrativePanelRef } from './NarrativePanel';
 import ChatPanel from './ChatPanel';
 import ConversationList from './ConversationList';
 import NarrativesList from './NarrativesList';
+import ImagesList, { ImagesListModal } from './ImagesList';
 import BreathworkTimer from './BreathworkTimer';
 import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
 import SystemPromptsModal from './SystemPromptsModal';
@@ -27,13 +28,23 @@ interface Narrative {
   preferredMode?: 'draft' | 'main';
 }
 
+interface Image {
+  id: string;
+  title: string;
+  created: string;
+  lastModified: string;
+  url: string;
+}
+
 export default function SessionLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNarrativesOpen, setIsNarrativesOpen] = useState(false);
+  const [isImagesOpen, setIsImagesOpen] = useState(false);
   const [chatWidth, setChatWidth] = useState(30); // Percentage
   const [isDragging, setIsDragging] = useState(false);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [currentNarrative, setCurrentNarrative] = useState<Narrative | null>(null);
+  const [currentImage, setCurrentImage] = useState<Image | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(25);
@@ -72,6 +83,9 @@ export default function SessionLayout() {
   const [preloadedNarratives, setPreloadedNarratives] = useState<Array<{ id: string; title: string; created: string; lastModified: string; characterCount: number }>>([]);
   const [narrativesRefreshTrigger, setNarrativesRefreshTrigger] = useState(0);
   const [preloadedSystemPrompts, setPreloadedSystemPrompts] = useState<Array<{ id: string; title: string; body: string; created: string; lastModified: string }>>([]);
+  const [preloadedImages, setPreloadedImages] = useState<Array<{ id: string; title: string; created: string; lastModified: string; url: string }>>([]);
+  const [imagesRefreshTrigger, setImagesRefreshTrigger] = useState(0);
+  const [viewingImage, setViewingImage] = useState<{ id: string; title: string; url: string } | null>(null);
 
   // Narrative panel ref
   const narrativePanelRef = useRef<NarrativePanelRef>(null);
@@ -431,7 +445,32 @@ export default function SessionLayout() {
     }
   };
 
+  // Image handlers
+  const handleImageSelect = async (imageId: string) => {
+    try {
+      const response = await fetch(`/api/images/${imageId}`);
+      const data = await response.json();
+      if (data.image) {
+        setCurrentImage(data.image);
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+    }
+  };
 
+  const handleNewImage = () => {
+    // This will be handled by the ImagesList component now
+    // The modal will switch to form mode
+    // Increment refresh trigger to force list update
+    setImagesRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleDeleteImage = (deletedImageId: string) => {
+    if (currentImage?.id === deletedImageId) {
+      setCurrentImage(null);
+    }
+    setImagesRefreshTrigger(prev => prev + 1);
+  };
 
   const [systemPromptsOpen, setSystemPromptsOpen] = useState(false);
 
@@ -488,6 +527,23 @@ export default function SessionLayout() {
                   stroke="currentColor"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={() => setIsImagesOpen(true)}
+                className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                title="Images"
+              >
+                <svg 
+                  className="w-5 h-5 transition-colors duration-300 text-white/40 group-hover:text-white/95" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth="1.5" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
               </button>
               
@@ -588,6 +644,68 @@ export default function SessionLayout() {
             preloadedPrompts={preloadedSystemPrompts}
           />
         )}
+
+        {/* Images List Modal */}
+        {isUIVisible && (
+          <ImagesListModal
+            isOpen={isImagesOpen}
+            onClose={() => setIsImagesOpen(false)}
+            currentImageId={currentImage?.id || null}
+            onImageSelect={handleImageSelect}
+            onNewImage={handleNewImage}
+            onDeleteImage={handleDeleteImage}
+            preloadedImages={preloadedImages}
+            refreshTrigger={imagesRefreshTrigger}
+            viewingImage={viewingImage}
+            onViewingImageChange={setViewingImage}
+          />
+        )}
+
+        {/* Full-screen Image Viewer Overlay */}
+        {viewingImage && (
+          <div className="fixed inset-0 top-0 left-0 w-screen h-screen bg-[#141414] z-[9999] flex" style={{ margin: 0, padding: 0 }}>
+            {/* Left Sidebar */}
+            <div className="w-16 flex flex-col items-center justify-center flex-shrink-0 pl-12 z-50 relative">
+              {/* Navigation Buttons Container */}
+              <div className="bg-white/10 rounded-lg p-2 space-y-2">
+                {/* Images List Button */}
+                <button
+                  onClick={() => {
+                    setIsImagesOpen(true);
+                  }}
+                  className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                  title="Images List"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                  </svg>
+                </button>
+                
+                {/* Close Button */}
+                <button
+                  onClick={() => setViewingImage(null)}
+                  className="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-white/20 text-white/40 hover:text-white/95 group"
+                  title="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Image Display Area */}
+            <div className="flex-1 flex items-center justify-center p-4">
+              <img 
+                src={viewingImage.url} 
+                alt={viewingImage.title}
+                className="max-h-[90%] max-w-[90%] object-contain"
+              />
+            </div>
+          </div>
+        )}
+
+
       </div>
   );
 } 

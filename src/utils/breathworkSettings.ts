@@ -14,7 +14,7 @@ export const saveBreathworkSettings = (settings: BreathworkSettings): void => {
   try {
     localStorage.setItem(BREATHWORK_SETTINGS_KEY, JSON.stringify(settings));
   } catch (error) {
-    console.warn('Failed to save breathwork settings:', error);
+    // Silent error handling for privacy
   }
 };
 
@@ -32,7 +32,7 @@ export const loadBreathworkSettings = (): BreathworkSettings => {
       }
     }
   } catch (error) {
-    console.warn('Failed to load breathwork settings:', error);
+    // Silent error handling for privacy
   }
   
   return getDefaultBreathworkSettings();

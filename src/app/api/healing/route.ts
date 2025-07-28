@@ -152,7 +152,6 @@ export async function POST(request: Request) {
       
       if (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') {
         // Call xAI API for Grok models
-        console.log(`[xAI API] Sending request to ${modelToUse} at ${new Date().toISOString()}`);
         response = await fetch('https://api.x.ai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -167,12 +166,8 @@ export async function POST(request: Request) {
             temperature: 0.6
           })
         });
-        const apiEndTime = Date.now();
-        const apiDuration = apiEndTime - apiStartTime;
-        console.log(`[xAI API] Response received from ${modelToUse} in ${apiDuration}ms at ${new Date().toISOString()}`);
       } else {
         // Call Perplexity API for other models
-        console.log(`[Perplexity API] Sending request to ${modelToUse} at ${new Date().toISOString()}`);
         response = await fetch('https://api.perplexity.ai/chat/completions', {
           method: 'POST',
           headers: {
@@ -187,10 +182,9 @@ export async function POST(request: Request) {
             temperature: 0.6   // Slightly creative but focused responses
           })
         });
-        const apiEndTime = Date.now();
-        const apiDuration = apiEndTime - apiStartTime;
-        console.log(`[Perplexity API] Response received from ${modelToUse} in ${apiDuration}ms at ${new Date().toISOString()}`);
       }
+
+      const apiDuration = Date.now() - apiStartTime;
 
       if (!response.ok) {
         const error = await response.text();

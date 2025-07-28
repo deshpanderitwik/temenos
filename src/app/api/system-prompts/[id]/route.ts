@@ -38,7 +38,7 @@ async function saveSystemPromptToFile(prompt: SystemPrompt): Promise<void> {
     const encryptedContent = await encrypt(JSON.stringify(prompt), ENCRYPTION_KEY);
     await fs.writeFile(filePath, encryptedContent, 'utf-8');
   } catch (error) {
-    console.error('Error saving system prompt to file:', error);
+    // Silent error handling for privacy
     throw error;
   }
 }
@@ -127,7 +127,7 @@ export async function PUT(
       return NextResponse.json({ error: 'System prompt not found' }, { status: 404 });
     }
   } catch (error) {
-    console.error('Error updating system prompt:', error);
+    // Silent error handling for privacy
     return NextResponse.json({ error: 'Failed to update system prompt' }, { status: 500 });
   }
 }
@@ -156,12 +156,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       await fs.unlink(filePath);
     } catch (fileError) {
       // File might not exist, which is fine
-      console.log(`File ${filePath} not found for deletion`);
     }
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting system prompt:', error);
+    // Silent error handling for privacy
     return NextResponse.json({ error: 'Failed to delete system prompt' }, { status: 500 });
   }
 } 

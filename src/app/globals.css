@@ -324,7 +324,7 @@ summary {
 }
 
 .chat-message p {
-  margin-bottom: 1.5rem; /* 24px equivalent */
+  margin-bottom: 0.75rem; /* 12px equivalent */
   margin-top: 0.75rem;
 }
 
