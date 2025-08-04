@@ -106,6 +106,8 @@ export default function ItemListBrowser<T>({
                   ? "No narratives yet"
                   : newItemLabel === '+ New Conversation'
                   ? "No conversations yet"
+                  : newItemLabel === '+ New Context'
+                  ? "No contexts yet"
                   : "No items yet"
                 }
               </p>

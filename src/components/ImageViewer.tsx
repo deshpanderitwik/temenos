@@ -7,13 +7,42 @@ interface ImageViewerProps {
   onClose: () => void;
   onBackToList: () => void;
   image: { id: string; title: string; url: string } | null;
+  images?: Array<{ id: string; title: string; url: string }>;
+  onImageChange?: (image: { id: string; title: string; url: string }) => void;
 }
 
-export default function ImageViewer({ isOpen, onClose, onBackToList, image }: ImageViewerProps) {
+export default function ImageViewer({ 
+  isOpen, 
+  onClose, 
+  onBackToList, 
+  image, 
+  images = [], 
+  onImageChange 
+}: ImageViewerProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   if (!isOpen || !image) return null;
+
+  const currentIndex = images.findIndex(img => img.id === image.id);
+  const isFirstImage = currentIndex === 0;
+  const isLastImage = currentIndex === images.length - 1;
+
+  const handlePrevious = () => {
+    if (!isFirstImage && onImageChange && images[currentIndex - 1]) {
+      onImageChange(images[currentIndex - 1]);
+      setImageLoaded(false);
+      setImageError(false);
+    }
+  };
+
+  const handleNext = () => {
+    if (!isLastImage && onImageChange && images[currentIndex + 1]) {
+      onImageChange(images[currentIndex + 1]);
+      setImageLoaded(false);
+      setImageError(false);
+    }
+  };
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -46,6 +75,52 @@ export default function ImageViewer({ isOpen, onClose, onBackToList, image }: Im
               stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
+          </button>
+
+          {/* Previous Button */}
+          <button
+            onClick={handlePrevious}
+            disabled={isFirstImage}
+            className={`w-10 h-10 rounded transition-colors flex items-center justify-center group ${
+              isFirstImage 
+                ? 'opacity-40 cursor-not-allowed text-gray-600' 
+                : 'hover:bg-white/20 text-white/40 hover:text-white/95'
+            }`}
+            title="Previous Image"
+          >
+            <svg 
+              className="w-5 h-5 transition-colors duration-300" 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              strokeWidth="1.5" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={handleNext}
+            disabled={isLastImage}
+            className={`w-10 h-10 rounded transition-colors flex items-center justify-center group ${
+              isLastImage 
+                ? 'opacity-40 cursor-not-allowed text-gray-600' 
+                : 'hover:bg-white/20 text-white/40 hover:text-white/95'
+            }`}
+            title="Next Image"
+          >
+            <svg 
+              className="w-5 h-5 transition-colors duration-300" 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              strokeWidth="1.5" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
           </button>
           

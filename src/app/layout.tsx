@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Work_Sans, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import "katex/dist/katex.min.css";
 
 const apocSans = localFont({
   src: "../fonts/ApocSans-Light.otf",
@@ -51,17 +52,7 @@ const jolyDisplayBold = localFont({
   display: "swap",
 });
 
-const jolyHeadlineBlackItalic = localFont({
-  src: "../fonts/JolyHeadline-BlackItalic.otf",
-  variable: "--font-joly-headline-black-italic",
-  display: "swap",
-});
 
-const jolyHeadlineBlack = localFont({
-  src: "../fonts/JolyHeadline-Black.otf",
-  variable: "--font-joly-headline-black",
-  display: "swap",
-});
 
 const surtRegular = localFont({
   src: "../fonts/Surt-Normal-Regular.otf",
@@ -112,7 +103,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${workSans.variable} ${geistMono.variable} ${apocSans.variable} ${apocRevelationsUltraBold.variable} ${jolyTextRegular.variable} ${jolyTextMedium.variable} ${jolyTextBold.variable} ${jolyDisplayRegular.variable} ${jolyDisplayMedium.variable} ${jolyDisplayBold.variable} ${jolyHeadlineBlackItalic.variable} ${jolyHeadlineBlack.variable} ${surtRegular.variable} ${surtMedium.variable} ${surtBold.variable} ${surtSemibold.variable} antialiased`}
+        className={`${workSans.variable} ${geistMono.variable} ${apocSans.variable} ${apocRevelationsUltraBold.variable} ${jolyTextRegular.variable} ${jolyTextMedium.variable} ${jolyTextBold.variable} ${jolyDisplayRegular.variable} ${jolyDisplayMedium.variable} ${jolyDisplayBold.variable} ${surtRegular.variable} ${surtMedium.variable} ${surtBold.variable} ${surtSemibold.variable} antialiased`}
       >
         {children}
       </body>

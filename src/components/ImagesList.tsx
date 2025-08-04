@@ -25,6 +25,7 @@ interface ImagesListProps {
   viewingImage?: { id: string; title: string; url: string } | null;
   onViewingImageChange?: (image: { id: string; title: string; url: string } | null) => void;
   isInsideModal?: boolean;
+  onImageCreated?: (image: { id: string; title: string; created: string; lastModified: string; url: string }) => void;
 }
 
 export default function ImagesList({
@@ -39,6 +40,7 @@ export default function ImagesList({
   viewingImage,
   onViewingImageChange,
   isInsideModal = false,
+  onImageCreated,
 }: ImagesListProps) {
   const [images, setImages] = useState<Image[]>([]);
 
@@ -84,6 +86,7 @@ export default function ImagesList({
         method: 'DELETE',
       });
       if (response.ok) {
+        // Update local state immediately for better UX
         setImages(prev => prev.filter(img => img.id !== imageId));
         onDeleteImage(imageId);
       }
@@ -210,6 +213,7 @@ export function ImagesListModal({
   refreshTrigger = 0,
   viewingImage,
   onViewingImageChange,
+  onImageCreated,
 }: Omit<ImagesListProps, 'isInsideModal'>) {
   const [mode, setMode] = useState<'list' | 'form'>('list');
   const [editingImage, setEditingImage] = useState<null | { id: string; title: string; created: string; lastModified: string; url: string }>(null);
@@ -238,15 +242,17 @@ export function ImagesListModal({
           viewingImage={viewingImage}
           onViewingImageChange={onViewingImageChange}
           isInsideModal={true}
+          onImageCreated={onImageCreated}
         />
       ) : (
         <ImageForm
           isOpen={true}
           onClose={() => { setMode('list'); setEditingImage(null); setViewOnly(false); }}
-          onCreated={() => {
+          onCreated={(image) => {
             setMode('list');
             setEditingImage(null);
             setViewOnly(false);
+            onImageCreated?.(image);
             onNewImage();
           }}
           initialImage={editingImage || undefined}

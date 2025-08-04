@@ -5,6 +5,7 @@ import { useBreathwork } from '@/hooks/useBreathwork';
 import { useBreathworkSound } from '@/hooks/useBreathworkSound';
 import { BreathPattern, getPatternById } from '@/utils/breathworkPatterns';
 import { loadBreathworkSettings, saveBreathworkSettings, BreathworkSettings as StoredSettings } from '@/utils/breathworkSettings';
+import { breathworkEngine } from '@/utils/breathworkEngine';
 import BreathworkVisualGuide from './BreathworkVisualGuide';
 import BreathworkPatternSelector from './BreathworkPatternSelector';
 import BreathworkSettings from './BreathworkSettings';
@@ -35,7 +36,6 @@ const BreathworkTimer = ({
   const [wasPausedBeforeSettings, setWasPausedBeforeSettings] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
-  const lastCountRef = useRef(0);
 
   const {
     session,
@@ -57,7 +57,17 @@ const BreathworkTimer = ({
     createSession
   } = useBreathwork();
 
-  const { playCountSound, initializeAudio, isAudioInitialized: soundInitialized, testSound, isMuted, toggleMute } = useBreathworkSound();
+  const { 
+    playCountSound, 
+    initializeAudio, 
+    isAudioInitialized: soundInitialized, 
+    testSound, 
+    isMuted, 
+    toggleMute,
+    scheduleSessionSounds,
+    clearScheduledSounds,
+    ensureAudioRunning
+  } = useBreathworkSound();
 
   // Initialize with persisted settings or defaults
   useEffect(() => {
@@ -82,13 +92,35 @@ const BreathworkTimer = ({
     }
   }, [isInitialized, createSession]);
 
-  // Play count sounds when count changes
+  // Ensure session is created if pattern is selected but no session exists
   useEffect(() => {
-    if (isActive && !isPaused && currentPhase && isAudioInitialized && currentCount !== lastCountRef.current) {
-      playCountSound(currentPhase);
-      lastCountRef.current = currentCount;
+    if (isInitialized && selectedPattern && !session) {
+      createSession(selectedPattern, breaths);
     }
-  }, [currentCount, isActive, isPaused, currentPhase, isAudioInitialized, playCountSound]);
+  }, [isInitialized, selectedPattern, session, breaths, createSession]);
+
+  // Set up engine sound callback for precise timing
+  useEffect(() => {
+    if (isAudioInitialized) {
+      // Set the sound callback in the engine for direct triggering
+      breathworkEngine.setSoundCallback((phase, count) => {
+        if (!isMuted) {
+          // Use requestAnimationFrame for immediate sound playback
+          requestAnimationFrame(() => {
+            playCountSound(phase, count);
+          });
+        }
+      });
+    } else {
+      // Clear the callback if audio is not initialized
+      breathworkEngine.setSoundCallback(null);
+    }
+
+    return () => {
+      // Always clear callback on cleanup
+      breathworkEngine.setSoundCallback(null);
+    };
+  }, [isAudioInitialized, isMuted, playCountSound]);
 
   // Handle pattern selection
   const handlePatternSelect = (pattern: BreathPattern) => {
@@ -127,7 +159,7 @@ const BreathworkTimer = ({
       // Reset timer when closing, same as stop button
       stop();
       reset();
-      lastCountRef.current = 0;
+      clearScheduledSounds();
     } else {
       // Entering full-screen mode
       setIsFullScreen(true);
@@ -138,7 +170,25 @@ const BreathworkTimer = ({
 
   // Handle session controls
   const handleStart = () => {
-    if (!session) return;
+    // Check if engine has a session, if not create one
+    if (!breathworkEngine.getSession() && selectedPattern) {
+      createSession(selectedPattern, breaths);
+      // Force immediate start after session creation
+      setTimeout(() => {
+        start();
+      }, 10);
+      return;
+    }
+    
+    // If still no session in engine after trying to create one, return early
+    if (!breathworkEngine.getSession()) {
+      return;
+    }
+    
+    // If session is completed (currentRound > totalBreaths), reset before starting
+    if (currentRound > totalBreaths) {
+      reset();
+    }
     
     if (isPaused) {
       resume();
@@ -154,7 +204,7 @@ const BreathworkTimer = ({
   const handleStop = () => {
     stop();
     reset();
-    lastCountRef.current = 0;
+    clearScheduledSounds();
   };
 
   // Handle settings modal open/close with auto-pause
@@ -189,14 +239,14 @@ const BreathworkTimer = ({
               {/* Play/Pause Button */}
               <button
                 onClick={async (e) => {
-                  // Ensure audio is initialized on first click
-                  if (!isAudioInitialized) {
-                    try {
-                      await initializeAudio();
+                  // Ensure audio is running and ready
+                  try {
+                    await ensureAudioRunning();
+                    if (!isAudioInitialized) {
                       setIsAudioInitialized(true);
-                    } catch (error) {
-                      // Silent error handling for privacy
                     }
+                  } catch (error) {
+                    // Silent error handling for privacy
                   }
                   
                   if (!isActive || isPaused) {

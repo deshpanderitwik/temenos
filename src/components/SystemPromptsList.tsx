@@ -5,7 +5,7 @@ import { DEFAULT_SYSTEM_PROMPT } from '@/utils/constants';
 interface SystemPrompt {
   id: string;
   title: string;
-  body: string;
+  body?: string; // Optional since it's not included in list view for privacy
   created: string;
   lastModified: string;
 }
@@ -19,7 +19,7 @@ interface SystemPromptsListProps {
   onDeletePrompt: (promptId: string) => void;
   onEditPrompt?: (prompt: SystemPrompt, viewOnly?: boolean) => void;
   isInsideModal?: boolean;
-  preloadedPrompts?: Array<{ id: string; title: string; body: string; created: string; lastModified: string }>;
+  preloadedPrompts?: Array<{ id: string; title: string; body?: string; created: string; lastModified: string }>;
   refreshKey?: number;
 }
 
@@ -69,12 +69,38 @@ export default function SystemPromptsList({
       };
       if (data.prompts) {
         // Put default prompt at the bottom, other prompts at the top (already sorted by newest first)
+        // Note: API now returns only metadata, so other prompts won't have body content
         setPrompts([...data.prompts, defaultPrompt]);
       } else {
         setPrompts([defaultPrompt]);
       }
     } catch (error) {
       // Silent error handling
+    }
+  };
+
+  const fetchFullPrompt = async (promptId: string): Promise<SystemPrompt | null> => {
+    try {
+      const response = await fetch(`/api/system-prompts/${promptId}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.systemPrompt;
+      }
+    } catch (error) {
+      // Silent error handling
+    }
+    return null;
+  };
+
+  const handlePromptSelect = async (prompt: SystemPrompt) => {
+    // If the prompt doesn't have body content, fetch it first
+    if (!prompt.body && prompt.id !== 'default') {
+      const fullPrompt = await fetchFullPrompt(prompt.id);
+      if (fullPrompt) {
+        onPromptSelect(fullPrompt);
+      }
+    } else {
+      onPromptSelect(prompt);
     }
   };
 
@@ -92,6 +118,18 @@ export default function SystemPromptsList({
     }
   };
 
+  const handleEditPrompt = async (prompt: SystemPrompt, viewOnly?: boolean) => {
+    // If the prompt doesn't have body content, fetch it first
+    if (!prompt.body && prompt.id !== 'default') {
+      const fullPrompt = await fetchFullPrompt(prompt.id);
+      if (fullPrompt && onEditPrompt) {
+        onEditPrompt(fullPrompt, viewOnly);
+      }
+    } else if (onEditPrompt) {
+      onEditPrompt(prompt, viewOnly);
+    }
+  };
+
   // If not inside a modal, use the full ItemListBrowser component
   if (!isInsideModal) {
     return (
@@ -100,7 +138,7 @@ export default function SystemPromptsList({
         onClose={onClose}
         items={prompts}
         currentItemId={currentPromptId}
-        onItemSelect={prompt => onPromptSelect(prompt)}
+        onItemSelect={prompt => handlePromptSelect(prompt)}
         onNewItem={onNewPrompt}
         onDeleteItem={id => {
           if (id === 'default') return;
@@ -131,7 +169,7 @@ export default function SystemPromptsList({
               type="button"
               className="text-gray-400 p-2 transition-all rounded hover:text-white hover:bg-white/10"
               title="Edit"
-              onClick={e => { e.stopPropagation(); onEditPrompt(p, p.id === 'default'); }}
+              onClick={e => { e.stopPropagation(); handleEditPrompt(p, p.id === 'default'); }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 0 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
@@ -167,7 +205,7 @@ export default function SystemPromptsList({
                 <div key={id}>
                   <div
                     onClick={() => {
-                      onPromptSelect(item);
+                      handlePromptSelect(item);
                       onClose();
                     }}
                     className={`flex items-center justify-between px-4 py-4 cursor-pointer transition-all ${
@@ -199,7 +237,7 @@ export default function SystemPromptsList({
                             type="button"
                             className="text-gray-400 p-2 transition-all rounded hover:text-white hover:bg-white/10"
                             title="Edit"
-                            onClick={e => { e.stopPropagation(); onEditPrompt(item, item.id === 'default'); }}
+                            onClick={e => { e.stopPropagation(); handleEditPrompt(item, item.id === 'default'); }}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 0 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />

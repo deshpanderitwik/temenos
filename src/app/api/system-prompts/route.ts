@@ -103,14 +103,23 @@ async function initializePrompts() {
   }
 }
 
-// GET /api/system-prompts - List all system prompts
+// GET /api/system-prompts - List all system prompts (metadata only for privacy)
 export async function GET() {
   await initializePrompts();
   // Sort prompts by lastModified date (newest first)
   const sortedPrompts = [...prompts].sort((a, b) => 
     new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
   );
-  return NextResponse.json({ prompts: sortedPrompts });
+  
+  // Return only metadata for privacy - exclude the sensitive body content
+  const publicPrompts = sortedPrompts.map(prompt => ({
+    id: prompt.id,
+    title: prompt.title,
+    created: prompt.created,
+    lastModified: prompt.lastModified,
+  }));
+  
+  return NextResponse.json({ prompts: publicPrompts });
 }
 
 // POST /api/system-prompts - Create or update system prompt

@@ -17,9 +17,13 @@ interface ImageMetadata {
   mimeType: string;
 }
 
-// Get encryption key from environment or use a default
+// Get encryption key from environment
 const getEncryptionKey = (): string => {
-  return process.env.IMAGE_ENCRYPTION_KEY || 'temenos-image-key-2025';
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY environment variable is required');
+  }
+  return key;
 };
 
 // Load metadata to find image by ID
@@ -37,10 +41,10 @@ async function loadMetadata(): Promise<ImageMetadata[]> {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const imageId = params.id;
+    const { id: imageId } = await params;
 
     if (!imageId) {
       return NextResponse.json({ error: 'Image ID is required' }, { status: 400 });
@@ -63,7 +67,7 @@ export async function GET(
     // Read encrypted file
     const encryptedData = await readFile(filePath, 'utf-8');
 
-    // Decrypt the image data
+    // Decrypt the image data (new format only)
     const decryptedBase64 = await decrypt(encryptedData, getEncryptionKey());
     
     // Convert base64 back to buffer

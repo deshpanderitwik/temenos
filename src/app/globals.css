@@ -70,7 +70,41 @@ p:last-child {
   touch-action: none; /* Prevent touch events from interfering */
 }
 
-/* TipTap Editor Styles */
+/* Global scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;  /* Safari and Chrome */
+}
+
+/* Override global overflow-y-auto styles when scrollbar-hide is applied */
+.overflow-y-auto.scrollbar-hide {
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
+}
+
+/* Base ProseMirror styles - shared between chat and narrative */
 .ProseMirror {
   outline: none;
   color: #f3f4f6;
@@ -78,21 +112,16 @@ p:last-child {
   line-height: 1.6;
 }
 
-/* Override Tailwind prose hr styles for TipTap editor */
-.ProseMirror hr,
-.prose hr,
-.prose-invert hr {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  border-top-width: 1px !important;
-  margin-top: 1.25rem !important;
-  margin-bottom: 1.25rem !important;
-  opacity: 1 !important;
+.ProseMirror:focus {
+  outline: none;
 }
 
-.ProseMirror p {
-  margin-bottom: 1.5rem; /* 24px equivalent */
+.ProseMirror ::selection {
+  background-color: #3b82f6;
+  color: white;
 }
 
+/* ProseMirror typography elements */
 .ProseMirror h1 {
   font-size: 1.5rem;
   font-weight: bold;
@@ -145,7 +174,7 @@ p:last-child {
   background-color: #4b5563;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono), 'Courier New', monospace;
   font-size: 0.875rem;
 }
 
@@ -172,6 +201,14 @@ p:last-child {
   color: #e5e7eb;
 }
 
+.ProseMirror hr {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-top-width: 1px !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  opacity: 1 !important;
+}
+
 /* Placeholder styles */
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -181,70 +218,182 @@ p:last-child {
   height: 0;
 }
 
-/* Focus styles */
-.ProseMirror:focus {
-  outline: none;
-}
-
-/* Selection styles */
-.ProseMirror ::selection {
-  background-color: #3b82f6;
-  color: white;
-}
-
-/* Custom scrollbar styles */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Hide scrollbar utility */
-.scrollbar-hide {
-  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
-  scrollbar-width: none !important;  /* Firefox */
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none !important;  /* Safari and Chrome */
-}
-
-/* Override global overflow-y-auto styles when scrollbar-hide is applied */
-.overflow-y-auto.scrollbar-hide {
-  scrollbar-width: none !important;
-  scrollbar-color: transparent transparent !important;
-}
-
-/* Ensure text selection works properly in chat messages */
-.chat-message-content,
-.chat-message-content *,
-.chat-message-content .prose,
-.chat-message-content .prose * {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-}
-
-/* Chat pane font styling with Surt */
-.chat-message,
-.chat-message *,
-.chat-message-content,
-.chat-message-content *,
-.messages-container,
-.messages-container * {
+/* Chat message styles */
+.chat-message {
+  margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
   font-family: var(--font-surt-regular), 'Surt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.chat-message-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.chat-message-content:hover {
+  border-left-color: rgba(59, 130, 246, 0.8);
+}
+
+/* Chat message typography overrides */
+.chat-message-content .prose {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.6 !important;
+  max-width: none !important;
+  color: inherit !important;
+}
+
+.chat-message-content .prose > * {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.chat-message-content .prose > *:first-child {
+  margin-top: 0 !important;
+}
+
+.chat-message-content .prose > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+.chat-message-content .prose p {
+  margin-bottom: 0.75rem !important;
+  margin-top: 0 !important;
+  line-height: 1.6 !important;
+  white-space: normal !important;
+}
+
+.chat-message-content .prose p:only-child {
+  margin-bottom: 0.5rem !important;
+}
+
+.chat-message-content .prose h1,
+.chat-message-content .prose h2,
+.chat-message-content .prose h3,
+.chat-message-content .prose h4,
+.chat-message-content .prose h5,
+.chat-message-content .prose h6 {
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.chat-message-content .prose blockquote {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.chat-message-content .prose pre {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.chat-message-content .prose ul,
+.chat-message-content .prose ol {
+  margin-bottom: 0.75rem !important;
+  margin-top: 0.75rem !important;
+}
+
+.chat-message-content .prose li {
+  margin-bottom: 0.25rem !important;
+  margin-top: 0.125rem !important;
+  list-style: none !important;
+}
+
+.chat-message-content .prose li > p {
+  margin: 0 !important;
+  display: inline !important;
+  white-space: normal !important;
+}
+
+.chat-message-content .prose li > span {
+  display: inline !important;
+  white-space: normal !important;
+}
+
+.chat-message-content .prose hr {
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  border: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  opacity: 1 !important;
+}
+
+.chat-message-content .prose ol > li::marker {
+  color: #e5e7eb !important;
+  font-size: 1em !important;
+  font-family: inherit !important;
+  vertical-align: baseline !important;
+  line-height: inherit !important;
+  font-weight: 600 !important;
+}
+
+.chat-message-content .prose ol > li p {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
+
+/* Syntax highlighting for code blocks */
+.chat-message-content .prose pre {
+  background-color: #1f2937 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.chat-message-content .prose pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Highlight.js theme overrides for dark mode */
+.hljs {
+  background: #1f2937 !important;
+  color: #e5e7eb !important;
+}
+
+.hljs-keyword {
+  color: #fbbf24 !important;
+}
+
+.hljs-string {
+  color: #34d399 !important;
+}
+
+.hljs-comment {
+  color: #9ca3af !important;
+  font-style: italic !important;
+}
+
+.hljs-number {
+  color: #f87171 !important;
+}
+
+.hljs-function {
+  color: #60a5fa !important;
+}
+
+.hljs-variable {
+  color: #a78bfa !important;
+}
+
+.hljs-operator {
+  color: #e5e7eb !important;
+}
+
+.hljs-punctuation {
+  color: #e5e7eb !important;
 }
 
 /* Prevent text selection during resize */
@@ -255,365 +404,75 @@ p:last-child {
   -ms-user-select: none;
 }
 
-/* But allow text selection in messages even during resize */
-.resizable-container.resizing .chat-message-content,
-.resizable-container.resizing .chat-message-content *,
-.resizable-container.resizing .chat-message-content .prose,
-.resizable-container.resizing .chat-message-content .prose * {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-}
-
-/* Prevent scrolling during resize operations */
 .resizable-container.resizing .messages-container {
   overflow: hidden !important;
-  scroll-behavior: auto !important;
 }
 
-/* Smooth transitions for non-resize interactions */
-.chat-panel * {
-  /* Remove user-select: none - this was causing the selection issue */
-}
-
-/* Re-enable transitions when not resizing */
-/* .chat-panel:not(.resizing) * {
-  transition: all 0.2s ease-in-out;
-} */
-
-/* Optimize prose content rendering */
-.prose {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-.prose * {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-/* Prevent image and media layout shifts */
-.prose img,
-.prose video,
-.prose iframe {
-  max-width: 100%;
-  height: auto;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-/* Optimize details/summary elements */
-details {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-summary {
-  cursor: pointer;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-/* Prevent layout shifts in thinking sections */
-.thinking-content {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-/* Single-column chat layout optimizations */
-.chat-message {
-  margin-bottom: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.chat-message p {
-  margin-bottom: 0.75rem; /* 12px equivalent */
-  margin-top: 0.75rem;
-}
-
-.chat-message li p {
-  margin-top: 0;
-}
-
-.chat-message ul, .chat-message ol {
-  margin-bottom: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.chat-message li {
-  margin-bottom: 0.25rem;
-}
-
-.chat-message li ul, .chat-message li ol {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Ordered list styling */
-.chat-message ol li::marker {
-  color: #6b7280;
-  font-family: inherit;
-  vertical-align: baseline;
-  line-height: inherit;
-  font-weight: 500;
-}
-
-.chat-message ol li p {
-  margin: 0;
-}
-
-/* Thinking process styling */
-.thinking-process {
-  margin-bottom: 1rem;
-}
-
-.thinking-process-details {
-  margin-bottom: 1rem;
-}
-
-.thinking-process-details ul, .thinking-process-details ol {
-  margin-bottom: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.thinking-process-details li {
-  margin-bottom: 0.25rem;
-}
-
-/* Horizontal rule styling */
-.chat-message hr {
-  margin: 1.25rem 0;
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  opacity: 1;
-}
-
-.chat-message-header {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-.chat-avatar {
-  flex-shrink: 0;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-.chat-message-content {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+/* Messages container */
+.messages-container {
+  min-height: 0;
+  flex: 1;
+  overflow-y: scroll !important;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  padding-right: 8px;
+  box-sizing: border-box;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
-  contain: none; /* Remove contain to prevent selection issues */
+  /* Normal scrolling for user interactions, smooth for programmatic scrolls */
+  scroll-behavior: auto;
+  will-change: scroll-position;
 }
-
-/* Override Tailwind text classes in chat messages */
-.chat-message-content .text-lg {
-  font-size: 16px !important; /* Reduced from 18px */
-}
-
-.chat-message-content .text-base {
-  font-size: 14px !important; /* Reduced from 16px */
-}
-
-.chat-message-content .text-sm {
-  font-size: 12px !important; /* Reduced from 14px */
-}
-
-.chat-message-content .text-xs {
-  font-size: 10px !important; /* Reduced from 12px */
-}
-
-/* Message border animations */
-.chat-message-content {
-  transition: border-color 0.2s ease-in-out;
-}
-
-.chat-message-content:hover {
-  border-left-color: rgba(59, 130, 246, 0.8);
-}
-
-/* Optimize prose content in chat messages */
-.chat-message-content .prose {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-.chat-message-content .prose * {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-/* Prevent layout shifts in thinking sections */
-.chat-message-content details {
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-.chat-message-content summary {
-  cursor: pointer;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-.chat-message-content .thinking-content {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-
 
 /* Narrative Editor Styles */
 .narrative-editor {
   transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   width: 100%;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  overflow-y: scroll !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.narrative-editor::-webkit-scrollbar {
+  display: none;
 }
 
 .narrative-editor .ProseMirror {
   outline: none;
-  color: #f3f4f6;
-  font-size: 18px;
+  color: #e5e7eb;
+  font-size: 20px;
   line-height: 27px;
-  padding: 24px 1.5rem 480px 1.5rem; /* 24px top padding to position text under gradient mask */
-  padding-right: 8px; /* Account for scrollbar width */
+  padding: 24px 1.5rem 480px 1.5rem;
   transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100%;
   box-sizing: border-box;
   max-height: none !important;
   height: auto !important;
   position: relative;
+  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+  white-space: pre-wrap;
+  tab-size: 4;
 }
 
-/* Main mode specific styles */
-
 .narrative-editor .ProseMirror p {
-  margin-top: 0 !important; /* Override Tailwind Typography */
-  margin-bottom: 0 !important; /* No spacing between paragraphs */
-  color: #f3f4f6;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  color: #e5e7eb;
   font-size: 20px;
   line-height: 1.7;
-  text-align: justify;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  -ms-hyphens: auto;
-}
-
-.narrative-editor .ProseMirror h1 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #f9fafb;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.narrative-editor .ProseMirror h2 {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: #f9fafb;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.narrative-editor .ProseMirror blockquote {
-  border-left: 4px solid rgba(255, 255, 255, 0.1);
-  padding-left: 1rem;
-  font-style: italic;
-  color: #d1d5db;
-  margin: 1rem 0;
-}
-
-.narrative-editor .ProseMirror ul,
-.narrative-editor .ProseMirror ol {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.narrative-editor .ProseMirror li {
-  margin-bottom: 0.25rem;
-}
-
-.narrative-editor .ProseMirror strong {
-  font-weight: bold;
-  color: #f9fafb;
-}
-
-.narrative-editor .ProseMirror em {
-  font-style: italic;
-  color: #e5e7eb;
-}
-
-.narrative-editor .ProseMirror code {
-  background-color: #4b5563;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
-}
-
-.narrative-editor .ProseMirror pre {
-  background-color: #4b5563;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-
-.narrative-editor .ProseMirror pre code {
-  background: none;
-  padding: 0;
-}
-
-.narrative-editor .ProseMirror:focus {
-  outline: none;
-}
-
-.narrative-editor .ProseMirror .is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: #6b7280;
-  pointer-events: none;
-  height: 0;
-}
-
-/* Immersive narrative typography */
-.narrative-editor {
-  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
-  user-select: text;
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.narrative-editor::-webkit-scrollbar {
-  width: 8px;
-}
-
-.narrative-editor::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.narrative-editor::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-.narrative-editor::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.narrative-editor .ProseMirror {
-  font-size: 20px;
-  line-height: 27px;
-  color: #e5e7eb;
-  font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
-  outline: none;
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.narrative-editor .ProseMirror p {
-  margin-top: 0 !important; /* Override Tailwind Typography */
-  margin-bottom: 0 !important; /* No spacing between paragraphs */
   text-align: left;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: none;
   word-wrap: break-word;
   overflow-wrap: break-word;
   font-feature-settings: "liga" 1, "kern" 1;
@@ -685,7 +544,7 @@ summary {
   background-color: #374151;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
-  font-family: 'Monaco', 'Consolas', monospace;
+  font-family: var(--font-mono), 'Monaco', 'Consolas', monospace;
   font-size: 0.875rem;
 }
 
@@ -703,19 +562,6 @@ summary {
   color: #e5e7eb;
 }
 
-/* Immersive header styling */
-.immersive-header {
-  background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
-}
-
-/* Focus states for better immersion */
-.narrative-editor .ProseMirror:focus {
-  outline: none;
-  box-shadow: none;
-}
-
 .narrative-editor .ProseMirror .is-editor-empty:first-child::before {
   color: #6b7280;
   content: attr(data-placeholder);
@@ -726,226 +572,11 @@ summary {
   font-family: var(--font-joly-text-regular), 'Georgia', 'Times New Roman', serif;
 }
 
-/* Enhanced typography for better readability with Joly */
-.narrative-editor .ProseMirror {
-  font-feature-settings: "liga" 1, "kern" 1;
-  text-rendering: optimizeLegibility;
-}
-
-.narrative-editor .ProseMirror p {
-  text-align: left;
-  hyphens: none;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  font-feature-settings: "liga" 1, "kern" 1;
-}
-
-/* Special styling for the first paragraph to create a drop cap effect */
-.narrative-editor .ProseMirror p:first-of-type {
-  text-indent: 0;
-}
-
-.narrative-editor .ProseMirror p:not(:first-of-type) {
-  text-indent: 0;
-}
-
-/* Ensure consistent spacing for indentation */
-.narrative-editor .ProseMirror {
-  white-space: pre-wrap;
-  tab-size: 4; /* Set tab width to 4 spaces */
-}
-
-.chat-message-content .prose ul, .chat-message-content .prose ol {
-  margin-bottom: 0rem !important;
-  margin-top: 0rem !important;
-}
-
-/* Add bottom margin to paragraphs that are not inside list items */
-.chat-message-content .prose > p {
-  margin-bottom: 1rem !important;
-  margin-top: 0rem !important;
-}
-
-.chat-message-content .prose > :first-child {
-  margin-top: 0 !important;
-}
-
-.chat-message-content .prose > :last-child {
-  margin-bottom: 0 !important;
-}
-
-/* More aggressive spacing reduction for chat messages */
-.chat-message-content .prose h1,
-.chat-message-content .prose h2,
-.chat-message-content .prose h3,
-.chat-message-content .prose h4,
-.chat-message-content .prose h5,
-.chat-message-content .prose h6 {
-  margin-top: 0.75rem !important;
-  margin-bottom: 0.5rem !important;
-}
-
-.chat-message-content .prose blockquote {
-  margin-top: 0.5rem !important;
-  margin-bottom: 0.5rem !important;
-  padding-top: 0.25rem !important;
-  padding-bottom: 0.25rem !important;
-}
-
-.chat-message-content .prose pre {
-  margin-top: 0.5rem !important;
-  margin-bottom: 0.5rem !important;
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-}
-
-.chat-message-content .prose code {
-  margin: 0 !important;
-  padding: 0.125rem 0.25rem !important;
-}
-
-.chat-message-content .prose strong,
-.chat-message-content .prose em {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.chat-message-content .prose a {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Reduce spacing for list items */
-.chat-message-content .prose li {
-  margin-top: 0.125rem !important;
-  margin-bottom: 0.5rem !important;
-}
-
-/* Style horizontal rules for better section separation */
-.chat-message-content .prose hr {
-  margin-top: 1.25rem !important;
-  margin-bottom: 1.25rem !important;
-  border: none !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-  opacity: 1 !important;
-}
-
-.chat-message-content .prose li > p {
-  margin: 0 !important;
-}
-
-/* Reduce spacing for nested lists */
-.chat-message-content .prose ul ul,
-.chat-message-content .prose ol ol,
-.chat-message-content .prose ul ol,
-.chat-message-content .prose ol ul {
-  margin-top: 0.25rem !important;
-  margin-bottom: 0.25rem !important;
-}
-
-.chat-message-content .prose ol > li::marker {
-  color: #e5e7eb !important;   /* Use the same color as text (Tailwind gray-200) */
-  font-size: 1em !important;   /* Match the list item font size */
-  font-family: inherit !important;
-  vertical-align: baseline !important;  /* Align with text baseline */
-  line-height: inherit !important;     /* Use the same line-height as the list item */
-  font-weight: 600 !important;
-}
-
-/* Remove paragraph margins inside ordered list items to fix alignment */
-.chat-message-content .prose ol > li p {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Additional rules to handle marked library output and ensure tight spacing */
-.chat-message-content .prose {
-  line-height: 1.6 !important;
-}
-
-.chat-message-content .prose p {
-  line-height: 1.6 !important;
-}
-
-/* Handle potential extra whitespace from marked library */
-.chat-message-content .prose br {
-  display: none !important;
-}
-
-.chat-message-content .prose p br {
-  display: inline !important;
-}
-
-/* Ensure no extra spacing from divs */
-.chat-message-content .prose div {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Handle any potential spacing from spans */
-.chat-message-content .prose span {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Ensure consistent spacing for all text elements */
-.chat-message-content .prose * {
-  line-height: 1.6 !important;
-}
-
-/* Override any potential spacing from Tailwind Typography defaults */
-.chat-message-content .prose {
-  max-width: none !important;
-  color: inherit !important;
-}
-
-.chat-message-content .prose p:empty {
-  display: none !important;
-}
-
-.chat-message-content .prose p:only-child {
-  margin: 0 !important;
-}
-
-/* Ultra-aggressive spacing control for chat messages */
-.chat-message-content .prose {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.chat-message-content .prose > * {
-  margin-top: 0.25rem !important;
-  margin-bottom: 0.25rem !important;
-}
-
-.chat-message-content .prose > *:first-child {
-  margin-top: 0 !important;
-}
-
-.chat-message-content .prose > *:last-child {
-  margin-bottom: 0 !important;
-}
-
-/* Handle any potential whitespace from marked library */
-.chat-message-content .prose {
-  white-space: normal !important;
-}
-
-.chat-message-content .prose p {
-  white-space: normal !important;
-}
-
-/* Thinking content paragraph spacing - 16px (must come after prose rules) */
-.chat-message-content .thinking-content .prose p,
-.chat-message-content .thinking-content p,
-.chat-message-content section.bg-white\/10 p {
-  margin-bottom: 1rem !important; /* 16px equivalent */
-}
-
-.chat-message-content .thinking-content .prose p:last-child,
-.chat-message-content .thinking-content p:last-child,
-.chat-message-content section.bg-white\/10 p:last-child {
-  margin-bottom: 0 !important;
+/* Immersive header styling */
+.immersive-header {
+  background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.8));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
 }
 
 /* Table styling for chat messages */
@@ -1016,7 +647,9 @@ summary {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Responsive table handling for very narrow chat panes */
+
+
+/* Responsive table handling */
 @media (max-width: 480px) {
   .chat-message-content .prose table,
   .chat-message-content table {
@@ -1031,102 +664,7 @@ summary {
     padding: 0.375rem 0.25rem;
     font-size: 0.75rem;
   }
-}
-
-/* Ensure tables don't overflow and text wraps properly */
-.chat-message-content .prose table {
-  overflow: hidden;
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-.chat-message-content .prose table tbody,
-.chat-message-content .prose table thead,
-.chat-message-content .prose table tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-/* Force text wrapping in table cells */
-.chat-message-content .prose table *,
-.chat-message-content table * {
-  white-space: normal !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
-}
-
-/* Table styling for thinking content (smaller) */
-.chat-message-content details .prose table,
-.chat-message-content details table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0.5rem 0;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.375rem;
-  overflow: hidden;
-  font-size: 0.75rem;
-  max-width: 100%;
-  table-layout: fixed;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.chat-message-content details .prose thead,
-.chat-message-content details thead {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.chat-message-content details .prose th,
-.chat-message-content details th {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 0.375rem 0.375rem;
-  text-align: left;
-  font-weight: 600;
-  color: #f3f4f6;
-  background-color: rgba(255, 255, 255, 0.03);
-  font-size: 0.75rem;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  -ms-hyphens: auto;
-  max-width: 0;
-  min-width: 0;
-}
-
-.chat-message-content details .prose td,
-.chat-message-content details td {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.375rem 0.375rem;
-  text-align: left;
-  color: #d1d5db;
-  font-size: 0.75rem;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  -ms-hyphens: auto;
-  max-width: 0;
-  min-width: 0;
-}
-
-.chat-message-content details .prose tr:nth-child(even),
-.chat-message-content details tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.01);
-}
-
-.chat-message-content details .prose tr:hover,
-.chat-message-content details tr:hover {
-  background-color: rgba(255, 255, 255, 0.03);
-}
-
-/* Responsive table handling for thinking content */
-@media (max-width: 480px) {
+  
   .chat-message-content details .prose table,
   .chat-message-content details table {
     font-size: 0.625rem;
@@ -1140,30 +678,6 @@ summary {
     padding: 0.25rem 0.125rem;
     font-size: 0.625rem;
   }
-}
-
-/* Ensure thinking content tables don't overflow and text wraps properly */
-.chat-message-content details .prose table {
-  overflow: hidden;
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-.chat-message-content details .prose table tbody,
-.chat-message-content details .prose table thead,
-.chat-message-content details .prose table tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-/* Force text wrapping in thinking content table cells */
-.chat-message-content details .prose table *,
-.chat-message-content details table * {
-  white-space: normal !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
 }
 
 /* Floating add to narrative button */
@@ -1196,49 +710,10 @@ summary {
 }
 
 /* Prevent layout shifts when scrollbars appear/disappear */
-.narrative-editor {
-  overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
-  scrollbar-width: none; /* Firefox - hide scrollbar */
-  -ms-overflow-style: none; /* Internet Explorer 10+ - hide scrollbar */
-}
-
-.narrative-editor::-webkit-scrollbar {
-  display: none; /* Safari and Chrome - hide scrollbar */
-}
-
-/* Ensure consistent spacing for narrative editor content */
-.narrative-editor .ProseMirror {
-  padding-right: 0; /* No need to account for scrollbar width since it's hidden */
-  box-sizing: border-box;
-}
-
-/* Prevent layout shifts in chat messages container */
-.messages-container {
-  min-height: 0;
-  flex: 1;
-  overflow-y: scroll !important; /* Always show scrollbar to prevent layout shifts */
-  overflow-x: hidden;
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent; /* Firefox */
-  padding-right: 8px; /* Account for scrollbar width */
-  box-sizing: border-box;
-  user-select: text;
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  contain: none; /* Remove contain to prevent selection issues */
-}
-
-/* Prevent layout shifts in any scrollable container */
 .overflow-y-auto {
   overflow-y: scroll !important;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-/* Ensure consistent spacing for all scrollable content */
-.overflow-y-auto,
-.overflow-y-scroll {
   padding-right: 8px;
   box-sizing: border-box;
 }
@@ -1252,12 +727,11 @@ summary {
   display: block;
 }
 
-/* ApocSans font utility class */
+/* Font utility classes */
 .font-apoc-sans {
   font-family: var(--font-apoc-sans), sans-serif;
 }
 
-/* Joly font utility classes */
 .font-joly-text-regular {
   font-family: var(--font-joly-text-regular), serif;
 }
@@ -1282,7 +756,6 @@ summary {
   font-family: var(--font-joly-display-bold), serif;
 }
 
-/* Surt font utility classes */
 .font-surt-regular {
   font-family: var(--font-surt-regular), sans-serif;
 }

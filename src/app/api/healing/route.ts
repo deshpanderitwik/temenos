@@ -12,39 +12,20 @@ interface HealingRequest {
 export async function POST(request: Request) {
   try {
     // Get the API keys from environment variables
-    const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
     const XAI_API_KEY = process.env.XAI_API_KEY;
-    const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_CLIENT_ENCRYPTION_KEY;
-    
-    if (!ENCRYPTION_KEY) {
-      return NextResponse.json(
-        { error: 'Encryption key not configured' },
-        { status: 500 }
-      );
-    }
 
     // Parse the request body
     const body: HealingRequest = await request.json();
     
-    // Use the provided model or default to r1-1776
-    const modelToUse = body.model || 'r1-1776';
+    // Use the provided model or default to grok-4-0709
+    const modelToUse = body.model || 'grok-4-0709';
     
-    // Check if we need xAI API key for Grok models
-    if (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') {
-      if (!XAI_API_KEY) {
-        return NextResponse.json(
-          { error: 'xAI API key not configured' },
-          { status: 500 }
-        );
-      }
-    } else {
-      // For Perplexity models
-      if (!PERPLEXITY_API_KEY) {
-        return NextResponse.json(
-          { error: 'Perplexity API key not configured' },
-          { status: 500 }
-        );
-      }
+    // Check if xAI API key is configured
+    if (!XAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'xAI API key not configured' },
+        { status: 500 }
+      );
     }
     
     if (!body.prompt) {
@@ -55,21 +36,12 @@ export async function POST(request: Request) {
     }
 
     try {
-      // Decrypt the incoming prompt and messages using client-side decryption
-      const { decryptClientSide } = await import('@/utils/encryption');
-      const decryptedPrompt = await decryptClientSide(body.prompt, ENCRYPTION_KEY);
-      const decryptedMessages = await Promise.all(
-        body.messages.map(async (msg) => ({
-          role: msg.role,
-          content: await decryptClientSide(msg.content, ENCRYPTION_KEY)
-        }))
-      );
+      // Data is now received as plain text - no decryption needed
+      const decryptedPrompt = body.prompt;
+      const decryptedMessages = body.messages;
 
-      // Decrypt the system prompt if provided, otherwise use default
-      let systemPromptContent = DEFAULT_SYSTEM_PROMPT;
-      if (body.systemPrompt) {
-        systemPromptContent = await decryptClientSide(body.systemPrompt, ENCRYPTION_KEY);
-      }
+      // Use provided system prompt or default
+      let systemPromptContent = body.systemPrompt || DEFAULT_SYSTEM_PROMPT;
 
       // Build a clean message array with proper alternation
       let messages = [
@@ -137,73 +109,40 @@ export async function POST(request: Request) {
         }
       }
 
-      // Check message sizes and truncate if necessary
-      const maxMessageLength = 4000; // Perplexity has limits on message length
-      messages = messages.map(msg => ({
-        ...msg,
-        content: msg.content.length > maxMessageLength 
-          ? msg.content.substring(0, maxMessageLength) + '...'
-          : msg.content
-      }));
-
-      // Call the appropriate API based on the selected model
-      let response;
+      // Call xAI API
       const apiStartTime = Date.now();
-      
-      if (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') {
-        // Call xAI API for Grok models
-        response = await fetch('https://api.x.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${XAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: modelToUse,
-            messages,
-            stream: false,
-            temperature: 0.6
-          })
-        });
-      } else {
-        // Call Perplexity API for other models
-        response = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: modelToUse,
-            messages,
-            max_tokens: 10000,
-            temperature: 0.6   // Slightly creative but focused responses
-          })
-        });
-      }
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${XAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: modelToUse,
+          messages,
+          stream: false,
+          temperature: 0.6
+        })
+      });
 
       const apiDuration = Date.now() - apiStartTime;
 
       if (!response.ok) {
         const error = await response.text();
-        const apiName = (modelToUse === 'grok-4-0709' || modelToUse === 'grok-3') ? 'xAI' : 'Perplexity';
         return NextResponse.json(
-          { error: `${apiName} API error: ${error}` },
+          { error: `xAI API error: ${error}` },
           { status: response.status }
         );
       }
 
       const data = await response.json();
       
-      // Encrypt the response using client-side encryption
-      const { encryptClientSide } = await import('@/utils/encryption');
+      // Return plain text response
       const aiResponse = data.choices[0].message.content;
-      const encryptedResponse = await encryptClientSide(aiResponse, ENCRYPTION_KEY);
       
       return NextResponse.json({
-        response: encryptedResponse,
+        response: aiResponse,
         usage: data.usage
       });
     } catch (decryptionError) {

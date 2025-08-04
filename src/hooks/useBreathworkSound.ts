@@ -1,9 +1,10 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import * as Tone from 'tone';
 import { BreathPhase } from '@/utils/breathworkPatterns';
+import { breathworkEngine, EngineEvent } from '@/utils/breathworkEngine';
 
 // F minor scale notes (root, third, fifth)
-const F_MINOR_NOTES = {
+const F_MINOR_NOTES: Record<string, string> = {
   inhale: 'F3',    // Root
   hold: 'Ab3',     // Minor third
   exhale: 'C4',    // Perfect fifth
@@ -11,12 +12,15 @@ const F_MINOR_NOTES = {
 };
 
 export interface UseBreathworkSoundReturn {
-  playCountSound: (phase: BreathPhase) => void;
+  playCountSound: (phase: BreathPhase, count?: number) => void;
   initializeAudio: () => Promise<void>;
   isAudioInitialized: boolean;
   testSound: () => void;
   isMuted: boolean;
   toggleMute: () => void;
+  scheduleSessionSounds: (pattern: any, breaths: number) => void;
+  clearScheduledSounds: () => void;
+  ensureAudioRunning: () => Promise<void>;
 }
 
 export function useBreathworkSound(): UseBreathworkSoundReturn {
@@ -26,16 +30,21 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
   const delayRef = useRef<Tone.FeedbackDelay | null>(null);
   const isInitializedRef = useRef(false);
   const [isMuted, setIsMuted] = useState(true);
+  const scheduledEventsRef = useRef<number[]>([]);
+  const sessionStartTimeRef = useRef<number>(0);
 
   // Initialize audio context and oscillator
   const initializeAudio = useCallback(async () => {
-    if (isInitializedRef.current) return;
-
     try {
       // Check if audio context is already running
       if (Tone.context.state !== 'running') {
         // Start audio context (required for browser autoplay policies)
         await Tone.start();
+      }
+      
+      // If already initialized, just ensure context is running
+      if (isInitializedRef.current) {
+        return;
       }
       
       // Create a simple synth for better sound
@@ -94,16 +103,58 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
     }
   }, []);
 
-  // Play count sound for current phase
-  const playCountSound = useCallback((phase: BreathPhase) => {
+  // Clear all scheduled sounds
+  const clearScheduledSounds = useCallback(() => {
+    scheduledEventsRef.current.forEach(id => Tone.Transport.clear(id));
+    scheduledEventsRef.current = [];
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+  }, []);
+
+  // Schedule all sounds for a session in advance
+  const scheduleSessionSounds = useCallback((pattern: any, breaths: number) => {
+    if (!synthRef.current || !isInitializedRef.current) return;
+
+    clearScheduledSounds();
+    
+    const patternDuration = pattern.phases.reduce((total: number, phase: any) => total + phase.duration, 0);
+    let currentTime = 0;
+    
+    for (let round = 0; round < breaths; round++) {
+      pattern.phases.forEach((phase: any) => {
+        const note = F_MINOR_NOTES[phase.type] || F_MINOR_NOTES.inhale;
+        
+        // Schedule a sound for each second of the phase
+        for (let second = 0; second < phase.duration; second++) {
+          const eventId = Tone.Transport.schedule((time: number) => {
+            if (!isMuted) {
+              synthRef.current?.triggerAttackRelease(note, '8n', time);
+            }
+          }, currentTime + second);
+          
+          scheduledEventsRef.current.push(eventId);
+        }
+        
+        currentTime += phase.duration;
+      });
+    }
+  }, [isMuted, clearScheduledSounds]);
+
+  // Play count sound for current phase (immediate playback)
+  const playCountSound = useCallback((phase: BreathPhase, count?: number) => {
     if (!synthRef.current || !isInitializedRef.current || isMuted) {
       return;
     }
 
     try {
+      // Check if audio context is running, if not, try to restart it
+      if (Tone.context.state !== 'running') {
+        Tone.start();
+      }
+      
       const note = F_MINOR_NOTES[phase.type] || F_MINOR_NOTES.inhale;
       
-      // Play the note directly with the synth
+      // Play the note immediately
       synthRef.current.triggerAttackRelease(note, '8n');
     } catch (error) {
       // Silent error handling for privacy
@@ -122,6 +173,11 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
     }
 
     try {
+      // Check if audio context is running, if not, try to restart it
+      if (Tone.context.state !== 'running') {
+        Tone.start();
+      }
+      
       // Play a test note (F3)
       synthRef.current.triggerAttackRelease('F3', '4n');
     } catch (error) {
@@ -129,9 +185,42 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
     }
   }, []);
 
+  // Ensure audio is running and ready
+  const ensureAudioRunning = useCallback(async () => {
+    try {
+      // Check if audio context is running, if not, try to restart it
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+      
+      // If not initialized, initialize audio
+      if (!isInitializedRef.current) {
+        await initializeAudio();
+      }
+    } catch (error) {
+      // Silent error handling for privacy
+    }
+  }, [initializeAudio]);
+
+  // Listen for engine events to clear sounds when session ends
+  useEffect(() => {
+    const handleEngineEvent = (event: EngineEvent) => {
+      if (event.type === 'sessionComplete' || event.type === 'stop') {
+        clearScheduledSounds();
+      }
+    };
+
+    breathworkEngine.addEventListener(handleEngineEvent);
+
+    return () => {
+      breathworkEngine.removeEventListener(handleEngineEvent);
+    };
+  }, [clearScheduledSounds]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      clearScheduledSounds();
       if (synthRef.current) {
         synthRef.current.dispose();
       }
@@ -145,7 +234,7 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
         delayRef.current.dispose();
       }
     };
-  }, []);
+  }, [clearScheduledSounds]);
 
   return {
     playCountSound,
@@ -153,6 +242,9 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
     isAudioInitialized: isInitializedRef.current,
     testSound,
     isMuted,
-    toggleMute
+    toggleMute,
+    scheduleSessionSounds,
+    clearScheduledSounds,
+    ensureAudioRunning
   };
 } 

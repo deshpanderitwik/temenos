@@ -52,8 +52,10 @@ export function useBreathwork(): UseBreathworkReturn {
       case 'sessionComplete':
         setIsActive(false);
         setIsPaused(false);
-        // Auto-reset when session completes so next play starts from beginning
-        breathworkEngine.reset();
+        setCurrentRound(1); // Reset to initial state
+        setCurrentCount(1);
+        setCountingDirection('up');
+        // Don't auto-reset - let user explicitly start a new session
         break;
       case 'pause':
         setIsPaused(true);
@@ -94,8 +96,8 @@ export function useBreathwork(): UseBreathworkReturn {
   useEffect(() => {
     breathworkEngine.addEventListener(handleEngineEvent);
     
-    // Update UI state every 100ms for smooth animations
-    updateIntervalRef.current = setInterval(updateUIState, 100);
+    // Update UI state every 50ms for smoother animations and better sync
+    updateIntervalRef.current = setInterval(updateUIState, 50);
     
     return () => {
       breathworkEngine.removeEventListener(handleEngineEvent);
@@ -103,7 +105,7 @@ export function useBreathwork(): UseBreathworkReturn {
         clearInterval(updateIntervalRef.current);
       }
     };
-  }, [handleEngineEvent, updateUIState]);
+  }, [handleEngineEvent]); // Removed updateUIState from dependencies since it's stable
 
   // Control functions
   const start = useCallback(() => {
@@ -128,6 +130,7 @@ export function useBreathwork(): UseBreathworkReturn {
 
   const createSession = useCallback((pattern: BreathPattern, breaths: number) => {
     breathworkEngine.createSession(pattern, breaths);
+    // Force immediate UI update to ensure session is available
     updateUIState();
   }, [updateUIState]);
 

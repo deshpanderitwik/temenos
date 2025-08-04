@@ -18,9 +18,13 @@ interface ImageMetadata {
   mimeType: string;
 }
 
-// Get encryption key from environment or use a default (in production, use a secure key)
+// Get encryption key from environment
 const getEncryptionKey = (): string => {
-  return process.env.IMAGE_ENCRYPTION_KEY || 'temenos-image-key-2025';
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY environment variable is required');
+  }
+  return key;
 };
 
 // Load existing metadata

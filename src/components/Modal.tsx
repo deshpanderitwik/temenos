@@ -31,6 +31,11 @@ export default function Modal({
     }
   };
 
+  const handleModalContentClick = (e: React.MouseEvent) => {
+    // Stop propagation to prevent scrim click
+    e.stopPropagation();
+  };
+
   return (
     <>
       {/* Scrim */}
@@ -50,7 +55,7 @@ export default function Modal({
       >
         <div
           className={`bg-[#141414] border border-white/10 rounded-xl w-full ${maxWidthClasses[maxWidth]} h-[672px] shadow-xl flex flex-col transition-transform duration-300 scale-100 pointer-events-auto scrollbar-hide`}
-          onClick={e => e.stopPropagation()}
+          onClick={handleModalContentClick}
         >
           {children}
         </div>

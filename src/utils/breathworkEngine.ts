@@ -7,6 +7,8 @@ export interface EngineEvent {
 
 export type EngineEventListener = (event: EngineEvent) => void;
 
+export type SoundCallback = (phase: BreathPhase, count: number) => void;
+
 export class BreathworkEngine {
   private session: BreathSession | null = null;
   private timer: NodeJS.Timeout | null = null;
@@ -14,6 +16,10 @@ export class BreathworkEngine {
   private phaseStartTime: number = 0;
   private currentCount: number = 1;
   private countingDirection: 'up' | 'down' | 'hold' = 'up';
+  private soundCallback: SoundCallback | null = null;
+  private lastUpdateTime: number = 0;
+  private expectedNextUpdate: number = 0;
+  private expectedTime: number = 0;
 
   // Initialize a new session
   createSession(pattern: BreathPattern, breaths: number): BreathSession {
@@ -41,18 +47,25 @@ export class BreathworkEngine {
     return this.session;
   }
 
+  // Set sound callback for precise timing
+  setSoundCallback(callback: SoundCallback | null): void {
+    this.soundCallback = callback;
+  }
+
   // Start the session
   start(): void {
     if (!this.session) return;
     
     this.session.isActive = true;
     this.session.isPaused = false;
-    this.phaseStartTime = Date.now();
+    this.phaseStartTime = performance.now();
+    this.lastUpdateTime = this.phaseStartTime;
+    this.expectedNextUpdate = this.phaseStartTime + 1000;
     
     // Initialize counting state for the first phase
     this.updateCountingState();
     
-    this.startTimer();
+    this.startPreciseTimer();
     this.emitEvent({ type: 'resume' });
   }
 
@@ -75,14 +88,25 @@ export class BreathworkEngine {
     if (!this.session || !this.session.isPaused) return;
     
     this.session.isPaused = false;
-    this.phaseStartTime = Date.now() - ((this.session.pattern.phases[this.session.currentPhaseIndex]?.duration || 0) - this.session.timeRemaining) * 1000;
+    const now = performance.now();
     
-    this.startTimer();
+    // Calculate the time that should have elapsed in this phase
+    const phaseDuration = this.session.pattern.phases[this.session.currentPhaseIndex]?.duration || 0;
+    const timeElapsedInPhase = phaseDuration - this.session.timeRemaining;
+    
+    // Set the phase start time to maintain precise timing
+    this.phaseStartTime = now - (timeElapsedInPhase * 1000);
+    this.lastUpdateTime = now;
+    this.expectedTime = now;
+    this.expectedNextUpdate = now + 1000;
+    
+    this.startPreciseTimer();
     this.emitEvent({ type: 'resume' });
   }
 
   // Stop the session
   stop(): void {
+    console.log('Engine stop called, session exists:', !!this.session);
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -93,11 +117,15 @@ export class BreathworkEngine {
       this.session.isPaused = false;
     }
     
+    // Clear sound callback when stopping
+    this.soundCallback = null;
+    
     this.emitEvent({ type: 'stop' });
   }
 
   // Reset the session
   reset(): void {
+    console.log('Engine reset called');
     this.stop();
     if (this.session) {
       this.session.currentRound = 1;
@@ -107,9 +135,11 @@ export class BreathworkEngine {
       this.currentCount = 1;
       this.countingDirection = 'up';
     }
+    // Ensure sound callback is cleared on reset
+    this.soundCallback = null;
   }
 
-  // Get current session state
+  // Get current session
   getSession(): BreathSession | null {
     return this.session;
   }
@@ -117,13 +147,13 @@ export class BreathworkEngine {
   // Get current phase
   getCurrentPhase(): BreathPhase | null {
     if (!this.session) return null;
-    return this.session.pattern.phases[this.session.currentPhaseIndex];
+    return this.session.pattern.phases[this.session.currentPhaseIndex] || null;
   }
 
   // Get progress percentage
   getProgress(): number {
-    if (!this.session || this.session.totalTime === 0) return 0;
-    return (this.session.elapsedTime / this.session.totalTime) * 100;
+    if (!this.session) return 0;
+    return Math.min((this.session.elapsedTime / this.session.totalTime) * 100, 100);
   }
 
   // Get time remaining in current phase
@@ -132,7 +162,7 @@ export class BreathworkEngine {
     return this.session.timeRemaining;
   }
 
-  // Get current count for display
+  // Get current count
   getCurrentCount(): number {
     return this.currentCount;
   }
@@ -148,44 +178,65 @@ export class BreathworkEngine {
     return this.session.totalTime - this.session.elapsedTime;
   }
 
-  // Add event listener
+  // Event listener management
   addEventListener(listener: EngineEventListener): void {
     this.listeners.push(listener);
   }
 
-  // Remove event listener
   removeEventListener(listener: EngineEventListener): void {
     this.listeners = this.listeners.filter(l => l !== listener);
   }
 
   // Private methods
-  private startTimer(): void {
+  private startPreciseTimer(): void {
     if (!this.session) return;
     
+    // Use setInterval with drift correction for precise 1-second timing
+    const startTime = performance.now();
+    this.expectedTime = startTime;
+    
     this.timer = setInterval(() => {
-      if (!this.session || this.session.isPaused) return;
+      // Check if session is still valid and active
+      if (!this.session || this.session.isPaused || !this.session.isActive) {
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+        return;
+      }
       
+      const now = performance.now();
+      const drift = now - this.expectedTime;
+      
+      // Update session state
       this.session.timeRemaining--;
       this.session.elapsedTime++;
       
-      // Update counting state
+      // Update counting state and trigger sound immediately
       this.updateCountingState();
       
       // Check if current phase is complete
       if (this.session.timeRemaining <= 0) {
         this.advancePhase();
       }
+      
+      // Update timing for next interval with drift correction
+      this.expectedTime += 1000;
+      this.lastUpdateTime = now;
+      this.expectedNextUpdate = this.expectedTime;
+      
     }, 1000);
   }
 
   private updateCountingState(): void {
-    if (!this.session) return;
+    if (!this.session || !this.session.isActive) return;
     
     const currentPhase = this.getCurrentPhase();
     if (!currentPhase) return;
     
     const phaseDuration = currentPhase.duration;
     const timeElapsed = phaseDuration - this.session.timeRemaining;
+    const previousCount = this.currentCount;
     
     switch (currentPhase.type) {
       case 'inhale':
@@ -208,6 +259,13 @@ export class BreathworkEngine {
         this.currentCount = Math.max(this.session.timeRemaining, 1);
         this.countingDirection = 'down';
         break;
+    }
+    
+    // Trigger sound callback if count changed
+    if (this.currentCount !== previousCount && this.soundCallback) {
+      // Ensure precise timing for sound callbacks
+      const now = performance.now();
+      this.soundCallback(currentPhase, this.currentCount);
     }
   }
 
@@ -307,6 +365,9 @@ export class BreathworkEngine {
 
   private completeSession(): void {
     this.stop();
+    this.soundCallback = null; // Clear sound callback
+    this.currentCount = 1;     // Reset counting state
+    this.countingDirection = 'up';
     this.emitEvent({ type: 'sessionComplete' });
   }
 

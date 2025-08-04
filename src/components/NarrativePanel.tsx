@@ -8,6 +8,9 @@
  * - Cmd+Shift+Z (Mac) / Ctrl+Y (Windows/Linux): Redo
  * - Cmd+S (Mac) / Ctrl+S (Windows/Linux): Save
  * - Cmd+Enter (Mac) / Ctrl+Enter (Windows/Linux): Add new paragraph
+ * - Cmd+' (Mac) / Ctrl+' (Windows/Linux): Convert quotes to typographic quotes
+ * - Cmd+[ (Mac) / Ctrl+[ (Windows/Linux): Move to previous sentence
+ * - Cmd+] (Mac) / Ctrl+] (Windows/Linux): Move to next sentence
  * - Cmd+J (Mac) / Ctrl+J (Windows/Linux): Toggle draft/main mode (global)
  * - Cmd+B: Bold text
  * - Cmd+I: Italic text
@@ -27,7 +30,10 @@ import History from '@tiptap/extension-history';
 import Bold from '@tiptap/extension-bold';
 import Italic from '@tiptap/extension-italic';
 import Heading from '@tiptap/extension-heading';
+import Typography from '@tiptap/extension-typography';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { convertQuotesInSelection } from '../utils/quoteConversion';
+import { moveToNextSentence, moveToPreviousSentence } from '../utils/sentenceNavigation';
 
 interface Narrative {
   id: string;
@@ -103,6 +109,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
 
   const editor = useEditor({
     extensions: [
+      Typography,
       Document,
       Paragraph.configure({
         HTMLAttributes: {
@@ -123,7 +130,7 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         levels: [1, 2, 3],
       }),
     ],
-    content: '<p>Start your story here...</p>',
+    content: '<p>"Test typographic quotes" and \'single quotes\' here...</p>',
     immediatelyRender: false,
     parseOptions: {
       preserveWhitespace: true,
@@ -223,6 +230,29 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
           editor?.commands.enter();
           return true;
         }
+        
+        // Cmd+' (Mac) or Ctrl+' (Windows/Linux) to convert quotes to typographic quotes
+        if ((event.metaKey || event.ctrlKey) && event.key === "'") {
+          event.preventDefault();
+          convertQuotesInSelection(editor);
+          return true;
+        }
+        
+        // Cmd+[ (Mac) or Ctrl+[ (Windows/Linux) to move to previous sentence
+        if ((event.metaKey || event.ctrlKey) && event.key === '[') {
+          event.preventDefault();
+          moveToPreviousSentence(editor);
+          return true;
+        }
+        
+        // Cmd+] (Mac) or Ctrl+] (Windows/Linux) to move to next sentence
+        if ((event.metaKey || event.ctrlKey) && event.key === ']') {
+          event.preventDefault();
+          moveToNextSentence(editor);
+          return true;
+        }
+        
+
         
         return false;
       },
@@ -738,16 +768,38 @@ const NarrativePanel = forwardRef<NarrativePanelRef, NarrativePanelProps>(({ cur
         }
         
         // Convert paragraph to HTML to preserve line breaks within paragraphs
-        const lines = paragraph.split('\n').filter(line => line.trim().length > 0);
-        const htmlContent = `<p>${lines.join('<br>')}</p>`;
+        // Don't filter out lines that might contain just bullet points
+        const lines = paragraph.split('\n').filter(line => line.length > 0);
+        
+        // Handle bullet points more carefully
+        const processedLines = lines.map(line => {
+          // If line starts with a bullet point, ensure it has proper spacing
+          if (line.trim().startsWith('•')) {
+            return line.replace(/^(\s*•\s*)/, '• ');
+          }
+          return line;
+        });
+        
+        const htmlContent = `<p>${processedLines.join('<br>')}</p>`;
         
         // Insert as HTML to preserve formatting
         editor.commands.insertContent(htmlContent);
       });
     } else {
       // If single paragraph, convert to HTML to preserve line breaks
-      const lines = text.split('\n').filter(line => line.trim().length > 0);
-      const htmlContent = `<p>${lines.join('<br>')}</p>`;
+      // Don't filter out lines that might contain just bullet points
+      const lines = text.split('\n').filter(line => line.length > 0);
+      
+      // Handle bullet points more carefully
+      const processedLines = lines.map(line => {
+        // If line starts with a bullet point, ensure it has proper spacing
+        if (line.trim().startsWith('•')) {
+          return line.replace(/^(\s*•\s*)/, '• ');
+        }
+        return line;
+      });
+      
+      const htmlContent = `<p>${processedLines.join('<br>')}</p>`;
       editor.commands.insertContent(htmlContent);
     }
     
