@@ -35,7 +35,6 @@ const BreathworkTimer = ({
   const [showSettings, setShowSettings] = useState(false);
   const [wasPausedBeforeSettings, setWasPausedBeforeSettings] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
 
   const {
     session,
@@ -60,7 +59,7 @@ const BreathworkTimer = ({
   const { 
     playCountSound, 
     initializeAudio, 
-    isAudioInitialized: soundInitialized, 
+    isAudioInitialized, 
     testSound, 
     isMuted, 
     toggleMute,
@@ -120,7 +119,7 @@ const BreathworkTimer = ({
       // Always clear callback on cleanup
       breathworkEngine.setSoundCallback(null);
     };
-  }, [isAudioInitialized, isMuted, playCountSound]);
+  }, [isAudioInitialized, isMuted, playCountSound, isActive]);
 
   // Handle pattern selection
   const handlePatternSelect = (pattern: BreathPattern) => {
@@ -190,6 +189,18 @@ const BreathworkTimer = ({
       reset();
     }
     
+    // Ensure sound callback is set up before starting (in case it was cleared)
+    if (isAudioInitialized) {
+      breathworkEngine.setSoundCallback((phase, count) => {
+        if (!isMuted) {
+          // Use requestAnimationFrame for immediate sound playback
+          requestAnimationFrame(() => {
+            playCountSound(phase, count);
+          });
+        }
+      });
+    }
+    
     if (isPaused) {
       resume();
     } else {
@@ -242,9 +253,6 @@ const BreathworkTimer = ({
                   // Ensure audio is running and ready
                   try {
                     await ensureAudioRunning();
-                    if (!isAudioInitialized) {
-                      setIsAudioInitialized(true);
-                    }
                   } catch (error) {
                     // Silent error handling for privacy
                   }

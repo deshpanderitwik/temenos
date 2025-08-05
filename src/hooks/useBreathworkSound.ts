@@ -28,10 +28,22 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
   const filterRef = useRef<Tone.Filter | null>(null);
   const reverbRef = useRef<Tone.Reverb | null>(null);
   const delayRef = useRef<Tone.FeedbackDelay | null>(null);
-  const isInitializedRef = useRef(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    // Try to load muted state from localStorage, default to false (unmuted)
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('breathwork-muted');
+        return stored ? JSON.parse(stored) : false;
+      } catch (error) {
+        return false;
+      }
+    }
+    return false;
+  });
   const scheduledEventsRef = useRef<number[]>([]);
   const sessionStartTimeRef = useRef<number>(0);
+  const isInitializedRef = useRef(false);
 
   // Initialize audio context and oscillator
   const initializeAudio = useCallback(async () => {
@@ -98,6 +110,7 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
       delayRef.current = delay;
 
       isInitializedRef.current = true;
+      setIsAudioInitialized(true);
     } catch (error) {
       // Silent error handling for privacy
     }
@@ -163,7 +176,18 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
 
   // Toggle mute state
   const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
+    setIsMuted((prev: boolean) => {
+      const newMutedState = !prev;
+      // Persist the mute state to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('breathwork-muted', JSON.stringify(newMutedState));
+        } catch (error) {
+          console.error('Error saving mute state:', error);
+        }
+      }
+      return newMutedState;
+    });
   }, []);
 
   // Test sound function
@@ -233,13 +257,14 @@ export function useBreathworkSound(): UseBreathworkSoundReturn {
       if (delayRef.current) {
         delayRef.current.dispose();
       }
+      isInitializedRef.current = false;
     };
   }, [clearScheduledSounds]);
 
   return {
     playCountSound,
     initializeAudio,
-    isAudioInitialized: isInitializedRef.current,
+    isAudioInitialized: isAudioInitialized,
     testSound,
     isMuted,
     toggleMute,

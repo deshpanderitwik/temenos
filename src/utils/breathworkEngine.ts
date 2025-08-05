@@ -261,8 +261,8 @@ export class BreathworkEngine {
         break;
     }
     
-    // Trigger sound callback if count changed
-    if (this.currentCount !== previousCount && this.soundCallback) {
+    // Trigger sound callback if count changed OR if this is the first count of the session (elapsedTime === 0)
+    if ((this.currentCount !== previousCount || this.session.elapsedTime === 0) && this.soundCallback) {
       // Ensure precise timing for sound callbacks
       const now = performance.now();
       this.soundCallback(currentPhase, this.currentCount);
